@@ -1,0 +1,13 @@
+version: "3.8"
+
+services:
+  bot:
+    build: .
+    command: /bin/sh -c "go run main.go"
+    links:
+      - "db"
+
+  redis:
+    image: redis:7.0-rc-alpine
+    ports:
+      - "6379:6379"

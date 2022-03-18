@@ -1,0 +1,4 @@
+tmp/
+src/node_modules/
+.env
+config.json
