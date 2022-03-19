@@ -98,8 +98,14 @@ func MusicHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		music.Search(strings.Join(args[1:], " "), m)
 	case "queue":
 		music.ShowQueue(m.ChannelID)
+	case "stream":
+		music.Stream(s, m)
 	case "pause":
+		music.Pause()
 		s.ChannelMessageSend(m.ChannelID, "Pausing music")
+	case "resume":
+		music.Resume()
+		s.ChannelMessageSend(m.ChannelID, "Resuming music")
 	case "stop":
 		s.ChannelMessageSend(m.ChannelID, "Stopping music")
 	default:
@@ -108,7 +114,7 @@ func MusicHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func queuePlay(s *discordgo.Session, guildID, authorID string) error {
-	vs, err := findVoiceChannel(s, guildID, authorID)
+	vs, err := music.FindVoiceChannel(s, guildID, authorID)
 	if err != nil {
 		return fmt.Errorf("Error finding voice channel: %s", err)
 	}
@@ -148,22 +154,6 @@ func addToQueue(s *discordgo.Session, query, channelID string, author *discordgo
 	music.AddToQueue(&song, channelID)
 
 	return nil
-}
-
-func findVoiceChannel(s *discordgo.Session, guildID, authorID string) (*discordgo.VoiceState, error) {
-	g, err := s.State.Guild(guildID)
-	if err != nil {
-		fmt.Println("Error finding guild:", err)
-		return nil, err
-	}
-
-	for _, vs := range g.VoiceStates {
-		if vs.UserID == authorID {
-			return vs, nil
-		}
-	}
-
-	return nil, fmt.Errorf("Could not find voice channel")
 }
 
 func shellout(command string) (error, string, string) {

@@ -52,14 +52,14 @@ func New(s *discordgo.Session) *DJ {
 	return currentDJ
 }
 
-func Connect() error {
+func Connect(guildID, channelID string) error {
 	if currentDJ.Discord.VoiceConnection != nil {
 		return nil
 	}
 
 	// Join the provided voice channel.
-	guildID := currentDJ.Discord.VoiceState.GuildID
-	channelID := currentDJ.Discord.VoiceState.ChannelID
+	// guildID := currentDJ.Discord.VoiceState.GuildID
+	// channelID := currentDJ.Discord.VoiceState.ChannelID
 	vc, err := currentDJ.Discord.Session.ChannelVoiceJoin(guildID, channelID, false, true)
 	if err != nil {
 		return err
@@ -107,7 +107,10 @@ func Play() error {
 		return nil
 	}
 
-	err := Connect()
+	guildID := currentDJ.Discord.VoiceState.GuildID
+	channelID := currentDJ.Discord.VoiceState.ChannelID
+
+	err := Connect(guildID, channelID)
 	if err != nil {
 		return fmt.Errorf("Error connecting to voice channel: %s", err)
 	}

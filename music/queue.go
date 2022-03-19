@@ -10,6 +10,14 @@ func Skip() {
 	currentDJ.NeedsToSkip = true
 }
 
+func Pause() {
+	currentDJ.Paused = true
+}
+
+func Resume() {
+	currentDJ.Paused = false
+}
+
 func skipSong() {
 	currentDJ.NeedsToSkip = false
 	if currentDJ.CurrentSong == nil {
