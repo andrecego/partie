@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
 	"partie-bot/cache"
 	"partie-bot/music"
@@ -99,7 +98,12 @@ func MusicHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	case "queue":
 		music.ShowQueue(m.ChannelID)
 	case "stream":
-		music.Stream(s, m)
+		err := music.Stream(s, m)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
 	case "pause":
 		music.Pause()
 		s.ChannelMessageSend(m.ChannelID, "Pausing music")
@@ -132,23 +136,16 @@ func queuePlay(s *discordgo.Session, guildID, authorID string) error {
 func addToQueue(s *discordgo.Session, query, channelID string, author *discordgo.User) error {
 	finder := music.ParseQuery(query)
 
-	filePath, err := finder.Download()
+	jsonInfo, err := finder.Download()
 	if err != nil {
 		return fmt.Errorf("Error downloading video: %s", err)
 	}
 
-	bs, err := os.ReadFile(fmt.Sprintf("%s.info.json", filePath))
-	if err != nil {
-		return fmt.Errorf("Error reading info file: %s", err)
-	}
-
 	var song youtube.Youtube
-	err = json.Unmarshal(bs, &song)
+	err = json.Unmarshal([]byte(jsonInfo), &song)
 	if err != nil {
 		return fmt.Errorf("Error unmarshalling info file: %s", err)
 	}
-
-	song.Path = filePath
 	song.AddedBy = author
 
 	music.AddToQueue(&song, channelID)

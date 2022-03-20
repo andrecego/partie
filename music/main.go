@@ -26,8 +26,9 @@ type Discord struct {
 type Song interface {
 	GetID() string
 	GetTitle() string
+	GetDuration() time.Duration
 	GetAddedBy() string
-	GetPath() string
+	GetURL() string
 }
 
 var (
