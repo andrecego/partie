@@ -1,7 +1,6 @@
 package music
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -83,67 +82,4 @@ func SetVoiceState(vs *discordgo.VoiceState) {
 	}
 
 	currentDJ.Discord.VoiceState = vs
-}
-
-func Disconnect() {
-	// Sleep for a specificed amount of time before ending.
-	for i := 0; i < timesToDisconnect; i++ {
-		if len(currentDJ.Queue) > 0 {
-			Play()
-			return
-		}
-
-		time.Sleep(time.Second)
-	}
-
-	// Stop speaking
-	currentDJ.Discord.VoiceConnection.Speaking(false)
-
-	// Disconnect from the provided voice channel.
-	currentDJ.Discord.VoiceConnection.Disconnect()
-}
-
-func Play() error {
-	if currentDJ.CurrentSong != nil {
-		return nil
-	}
-
-	guildID := currentDJ.Discord.VoiceState.GuildID
-	channelID := currentDJ.Discord.VoiceState.ChannelID
-
-	err := Connect(guildID, channelID)
-	if err != nil {
-		return fmt.Errorf("Error connecting to voice channel: %s", err)
-	}
-
-	NextSong()
-	for currentDJ.CurrentSong != nil {
-		fmt.Println("Flushing buffer...")
-		currentDJ.Buffer = make([][]byte, 0)
-
-		err := addToBuffer(currentDJ.CurrentSong)
-		if err != nil {
-			return fmt.Errorf("Error adding to buffer: %s", err)
-		}
-
-		nowPlayingMessage()
-		PlayLoop()
-	}
-
-	// Disconnect()
-
-	return nil
-}
-
-func PlayLoop() {
-	for _, buff := range currentDJ.Buffer {
-		if currentDJ.NeedsToSkip {
-			skipSong()
-			return
-		}
-
-		currentDJ.Discord.VoiceConnection.OpusSend <- buff
-	}
-
-	skipSong()
 }

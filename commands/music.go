@@ -79,7 +79,7 @@ func MusicHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 		}
 
-		err := queuePlay(s, m.GuildID, m.Author.ID)
+		err := music.Stream(s, m)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -115,22 +115,6 @@ func MusicHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	default:
 		s.ChannelMessageSend(m.ChannelID, "Usage: !music <play/pause/stop>")
 	}
-}
-
-func queuePlay(s *discordgo.Session, guildID, authorID string) error {
-	vs, err := music.FindVoiceChannel(s, guildID, authorID)
-	if err != nil {
-		return fmt.Errorf("Error finding voice channel: %s", err)
-	}
-
-	music.SetVoiceState(vs)
-
-	err = music.Play()
-	if err != nil {
-		return fmt.Errorf("Error playing music: %s", err)
-	}
-
-	return nil
 }
 
 func addToQueue(s *discordgo.Session, query, channelID string, author *discordgo.User) error {

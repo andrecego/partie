@@ -18,16 +18,6 @@ func Resume() {
 	currentDJ.Paused = false
 }
 
-func skipSong() {
-	currentDJ.NeedsToSkip = false
-	if currentDJ.CurrentSong == nil {
-		return
-	}
-
-	currentDJ.CurrentSong = nil
-	Play()
-}
-
 func AddToQueue(song Song, channelID string) {
 	currentDJ.Queue = append(currentDJ.Queue, song)
 	addedToQueueMessage(song, channelID)

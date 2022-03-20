@@ -10,6 +10,10 @@ import (
 )
 
 func Stream(s *discordgo.Session, m *discordgo.MessageCreate) error {
+	if currentDJ.CurrentSong != nil {
+		return nil
+	}
+
 	if currentDJ.Discord.VoiceConnection == nil {
 		vs, err := FindVoiceChannel(s, m.GuildID, m.Author.ID)
 		if err != nil {
@@ -33,6 +37,8 @@ func Stream(s *discordgo.Session, m *discordgo.MessageCreate) error {
 	options.Application = "voip"
 	// options.StartTime = 110
 
+	// TODO: Add error check to see if url is still valid
+
 	encodingSession, err := dca.EncodeFile(song.GetURL(), options)
 	if err != nil {
 		return fmt.Errorf("error encoding: %s", err)
@@ -41,32 +47,29 @@ func Stream(s *discordgo.Session, m *discordgo.MessageCreate) error {
 
 	done := make(chan error)
 	streamSession := dca.NewStream(encodingSession, currentDJ.Discord.VoiceConnection, done)
-	tickerS := time.NewTicker(time.Second)
+	// tickerS := time.NewTicker(time.Second)
 	tickerMs := time.NewTicker(time.Millisecond * 100)
 
 	for {
 		select {
 		case err = <-done:
-			fmt.Print("Done")
-			fmt.Println(err)
 			if err != nil && err != io.EOF {
 				return fmt.Errorf("error streaming: %s", err)
 			}
 
 			if err == io.EOF {
-				fmt.Println("Song ended")
-				fmt.Println(encodingSession.FFMPEGMessages())
+				currentDJ.CurrentSong = nil
 				Stream(s, m)
 			}
 
-		case <-tickerS.C:
-			stats := encodingSession.Stats()
-			playbackPosition := streamSession.PlaybackPosition()
+		// case <-tickerS.C:
+		// 	stats := encodingSession.Stats()
+		// 	playbackPosition := streamSession.PlaybackPosition()
 
-			fmt.Printf("Playback: %10s, Transcode Stats: Time: %5s, Size: %5dkB, Bitrate: %6.2fkB, Speed: %5.1fx\r", playbackPosition, stats.Duration.String(), stats.Size, stats.Bitrate, stats.Speed)
+		// 	fmt.Printf("Playback: %10s, Transcode Stats: Time: %5s, Size: %5dkB, Bitrate: %6.2fkB, Speed: %5.1fx\r", playbackPosition, stats.Duration.String(), stats.Size, stats.Bitrate, stats.Speed)
 
 		case <-tickerMs.C:
-			if currentDJ.Paused {
+			if currentDJ.Paused && !streamSession.Paused() {
 				streamSession.SetPaused(true)
 				continue
 			}
