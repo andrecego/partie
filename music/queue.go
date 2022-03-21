@@ -20,6 +20,7 @@ func Resume() {
 
 func AddToQueue(song Song, channelID string) {
 	currentDJ.Queue = append(currentDJ.Queue, song)
+	updateQueueMessage()
 	addedToQueueMessage(song, channelID)
 }
 

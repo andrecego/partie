@@ -3,3 +3,4 @@ src/node_modules/
 .env
 config.json
 .todo
+yt-dlp-example.json

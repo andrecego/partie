@@ -27,7 +27,9 @@ type Song interface {
 	GetTitle() string
 	GetDuration() time.Duration
 	GetAddedBy() string
+	GetVideoURL() string
 	GetURL() string
+	GetThumbnail() string
 }
 
 var (

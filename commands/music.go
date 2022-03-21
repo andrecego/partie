@@ -59,15 +59,7 @@ func MusicHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	music.New(s)
 
 	switch args[0] {
-	// case "play":
-	// 	s.ChannelMessageSend(m.ChannelID, "Playing music")
-	// 	err := play(s, strings.Join(args[1:], " "), m.GuildID, m.Author.ID)
-	// 	if err != nil {
-	// 		fmt.Println(err)
-	// 		return
-	// 	}
 	case "play":
-		// s.ChannelMessageSend(m.ChannelID, "Playing music")
 		s.MessageReactionAdd(m.ChannelID, m.Message.ID, "✅")
 
 		query := strings.Join(args[1:], " ")
@@ -178,4 +170,34 @@ func playSound(s *discordgo.Session, guildID, channelID string) (err error) {
 	vc.Disconnect()
 
 	return nil
+}
+
+func PlaylistChannelHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
+	if m.ChannelID != "955146633203560468" { // playlist channel
+		return
+	}
+
+	if m.Author.ID == "943312702372192256" { // partie bot id
+		return
+	}
+
+	go deleteMessage(s, m)
+
+	if isCommand(m.Content) {
+		return
+	}
+
+	m.Content = "!music play " + m.Content
+
+	fmt.Println(m.Content)
+
+	MusicHandler(s, m)
+}
+
+func deleteMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
+	time.Sleep(250 * time.Millisecond)
+	err := s.ChannelMessageDelete(m.ChannelID, m.ID)
+	if err != nil {
+		fmt.Println("ERROR deleting message: ", err)
+	}
 }

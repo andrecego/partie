@@ -27,6 +27,7 @@ func Stream(s *discordgo.Session, m *discordgo.MessageCreate) error {
 	}
 
 	song := NextSong()
+	updateQueueMessage()
 	if song == nil {
 		return fmt.Errorf("No song in queue")
 	}
@@ -35,6 +36,7 @@ func Stream(s *discordgo.Session, m *discordgo.MessageCreate) error {
 	options.RawOutput = true
 	options.Bitrate = 180
 	options.Application = "voip"
+	options.Volume = 24
 	// options.StartTime = 110
 
 	// TODO: Add error check to see if url is still valid
@@ -76,6 +78,14 @@ func Stream(s *discordgo.Session, m *discordgo.MessageCreate) error {
 
 			if streamSession.Paused() && !currentDJ.Paused {
 				streamSession.SetPaused(false)
+				continue
+			}
+
+			if currentDJ.NeedsToSkip {
+				currentDJ.NeedsToSkip = false
+				currentDJ.CurrentSong = nil
+				encodingSession.Cleanup()
+				Stream(s, m)
 				continue
 			}
 		}

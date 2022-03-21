@@ -1,6 +1,13 @@
 package music
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+	"reflect"
+	"time"
+
+	"github.com/bwmarrin/discordgo"
+)
 
 func nowPlayingMessage() {
 	channelID := "943655307626823771"
@@ -10,29 +17,115 @@ func nowPlayingMessage() {
 	currentDJ.Discord.Session.ChannelMessageSend(channelID, message)
 }
 
-func queueMessage(channelID string) {
-	message := ""
-
+func getMessage() (string, *discordgo.MessageEmbed) {
+	npMessage := ""
+	npStatus := ""
+	npImage := "https://media.wired.com/photos/5ee79f9d6f93e879afd83412/191:100/w_2400,h_1256,c_limit/Science_Spot.jpg"
 	np := currentDJ.CurrentSong
 	if np != nil {
-		message += fmt.Sprintf("Now playing: %s - %s\n", np.GetTitle(), np.GetAddedBy())
+		npImage = np.GetThumbnail()
+		npStatus = "Now playing:"
+		npMessage = embedFormatSong(np)
+	} else {
+		npStatus = "Nothing playing."
+		npMessage = "To play a song just type the name of the song"
 	}
 
+	queueMessage := "__**Queue:**__\n"
 	if len(currentDJ.Queue) > 0 {
-		message += "Queue:\n"
+		queueSize := len(currentDJ.Queue)
+		ReverseSlice(currentDJ.Queue)
 		for i, song := range currentDJ.Queue {
-			message += fmt.Sprintf("%d. %s - %s\n", i+1, song.GetTitle(), song.GetAddedBy())
+			queueMessage += fmt.Sprintf("%02d. %s\n", queueSize-i, formatSong(song))
 		}
+	} else {
+		queueMessage += "No songs in queue. Go add some! 🎵"
 	}
 
-	if message == "" {
-		message = "No songs in queue. Go add some! 🎵"
-	}
+	embededMessage := &discordgo.MessageEmbed{Title: npStatus, Description: npMessage, Color: 0x00ff00}
+	embededMessage.Image = &discordgo.MessageEmbedImage{URL: npImage}
+	embededMessage.Footer = &discordgo.MessageEmbedFooter{Text: fmt.Sprintf("!music commands work here as well"), IconURL: "https://www.pngmart.com/files/11/Doge-Meme-PNG-Photos.png"}
+	return queueMessage, embededMessage
+}
 
-	currentDJ.Discord.Session.ChannelMessageSend(channelID, message)
+func queueMessage(channelID string) {
+	queueMessage, embededMessage := getMessage()
+	message := &discordgo.MessageSend{Content: queueMessage, Embed: embededMessage, AllowedMentions: nil}
+
+	currentDJ.Discord.Session.ChannelMessageSendComplex(channelID, message)
 }
 
 func addedToQueueMessage(song Song, channelID string) {
+	if channelID == "955146633203560468" { // playlist channel id
+		return
+	}
+
 	message := fmt.Sprintf("Added %s to queue.\n", song.GetTitle())
 	currentDJ.Discord.Session.ChannelMessageSend(channelID, message)
+}
+
+func formatSong(song Song) string {
+	return fmt.Sprintf("%s [%s] - %s", truncate(song.GetTitle(), 40), fmtDuration(song.GetDuration()), song.GetAddedBy())
+}
+
+func embedFormatSong(song Song) string {
+	return fmt.Sprintf("[%s](%s) [%s] - %s", truncate(song.GetTitle(), 40), song.GetVideoURL(), fmtDuration(song.GetDuration()), song.GetAddedBy())
+}
+
+func fmtDuration(d time.Duration) string {
+	seconds := d.Round(time.Second)
+	minutes := seconds / time.Minute
+	d -= minutes * time.Minute
+	seconds = d / time.Second
+	return fmt.Sprintf("%02d:%02d", minutes, seconds)
+}
+
+func truncate(s string, maxLen int) string {
+	if len(s) > maxLen {
+		return s[:maxLen] + "..."
+	}
+	return s
+}
+
+func numberOfSongsInQueue() string {
+	size := len(currentDJ.Queue)
+	if size == 0 {
+		return "No"
+	}
+
+	return fmt.Sprintf("%02d", size)
+}
+
+func ReverseSlice(data interface{}) {
+	value := reflect.ValueOf(data)
+	if value.Kind() != reflect.Slice {
+		panic(errors.New("data must be a slice type"))
+	}
+	valueLen := value.Len()
+	for i := 0; i <= int((valueLen-1)/2); i++ {
+		reverseIndex := valueLen - 1 - i
+		tmp := value.Index(reverseIndex).Interface()
+		value.Index(reverseIndex).Set(value.Index(i))
+		value.Index(i).Set(reflect.ValueOf(tmp))
+	}
+}
+
+func updateQueueMessage() {
+	messageID := "955235598292103199"
+	channelID := "955146633203560468"
+
+	content, embed := getMessage()
+
+	messageEdit := &discordgo.MessageEdit{
+		ID:              messageID,
+		Channel:         channelID,
+		Content:         &content,
+		Embed:           embed,
+		AllowedMentions: nil,
+	}
+
+	_, err := currentDJ.Discord.Session.ChannelMessageEditComplex(messageEdit)
+	if err != nil {
+		fmt.Println("Error editing message: ", err)
+	}
 }

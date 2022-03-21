@@ -2,17 +2,20 @@ package youtube
 
 import (
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 type Youtube struct {
-	ID       string `json:"id"`
-	Title    string `json:"title"`
-	Duration int    `json:"duration"`
-	URL      string `json:"url"`
-	AddedBy  *discordgo.User
+	ID        string `json:"id"`
+	Title     string `json:"title"`
+	Duration  int    `json:"duration"`
+	VideoURL  string `json:"webpage_url"`
+	URL       string `json:"url"`
+	Thumbnail string `json:"thumbnail"`
+	AddedBy   *discordgo.User
 }
 
 func (y *Youtube) GetID() string {
@@ -20,7 +23,15 @@ func (y *Youtube) GetID() string {
 }
 
 func (y *Youtube) GetTitle() string {
-	return y.Title
+
+	titleNomalizedRegex := regexp.MustCompile(`(?P<Title>.*-.*)([\(\[\|].+)$`)
+	matches := titleNomalizedRegex.FindStringSubmatch(y.Title)
+	titleIndex := titleNomalizedRegex.SubexpIndex("Title")
+	if titleIndex < 0 {
+		return y.Title
+	}
+
+	return matches[titleIndex]
 }
 
 func (y *Youtube) GetDuration() time.Duration {
@@ -28,11 +39,19 @@ func (y *Youtube) GetDuration() time.Duration {
 }
 
 func (y *Youtube) GetAddedBy() string {
-	return fmt.Sprintf("%s#%s", y.AddedBy.Username, y.AddedBy.Discriminator)
+	return fmt.Sprintf("<@%s>", y.AddedBy.ID)
 }
 
 func (y *Youtube) GetURL() string {
 	return y.URL
+}
+
+func (y *Youtube) GetThumbnail() string {
+	return y.Thumbnail
+}
+
+func (y *Youtube) GetVideoURL() string {
+	return y.VideoURL
 }
 
 var youtubeDefaultArgs = []string{
