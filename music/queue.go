@@ -7,7 +7,23 @@ func ShowQueue(channelID string) {
 }
 
 func Skip() {
+	if currentDJ == nil || currentDJ.CurrentSong == nil {
+		return
+	}
+
 	currentDJ.NeedsToSkip = true
+}
+
+func PlayPause() {
+	if currentDJ == nil || currentDJ.CurrentSong == nil {
+		return
+	}
+
+	if currentDJ.Paused {
+		Resume()
+	} else {
+		Pause()
+	}
 }
 
 func Pause() {

@@ -34,15 +34,17 @@ func getMessage() (string, *discordgo.MessageEmbed) {
 	queueMessage := "__**Queue:**__\n"
 	if len(currentDJ.Queue) > 0 {
 		queueSize := len(currentDJ.Queue)
-		ReverseSlice(currentDJ.Queue)
-		for i, song := range currentDJ.Queue {
+		printedQueue := make([]Song, queueSize)
+		copy(printedQueue, currentDJ.Queue)
+		ReverseSlice(printedQueue)
+		for i, song := range printedQueue {
 			queueMessage += fmt.Sprintf("%02d. %s\n", queueSize-i, formatSong(song))
 		}
 	} else {
 		queueMessage += "No songs in queue. Go add some! 🎵"
 	}
 
-	embededMessage := &discordgo.MessageEmbed{Title: npStatus, Description: npMessage, Color: 0x00ff00}
+	embededMessage := &discordgo.MessageEmbed{Title: npStatus, Description: npMessage, Color: 0x5E06AC}
 	embededMessage.Image = &discordgo.MessageEmbedImage{URL: npImage}
 	embededMessage.Footer = &discordgo.MessageEmbedFooter{Text: fmt.Sprintf("!music commands work here as well"), IconURL: "https://www.pngmart.com/files/11/Doge-Meme-PNG-Photos.png"}
 	return queueMessage, embededMessage
@@ -65,11 +67,11 @@ func addedToQueueMessage(song Song, channelID string) {
 }
 
 func formatSong(song Song) string {
-	return fmt.Sprintf("%s [%s] - %s", truncate(song.GetTitle(), 40), fmtDuration(song.GetDuration()), song.GetAddedBy())
+	return fmt.Sprintf("%s [%s] - %s", truncate(song.GetTitle(), 50), fmtDuration(song.GetDuration()), song.GetAddedBy())
 }
 
 func embedFormatSong(song Song) string {
-	return fmt.Sprintf("[%s](%s) [%s] - %s", truncate(song.GetTitle(), 40), song.GetVideoURL(), fmtDuration(song.GetDuration()), song.GetAddedBy())
+	return fmt.Sprintf("[%s](%s) [%s] - %s", truncate(song.GetTitle(), 50), song.GetVideoURL(), fmtDuration(song.GetDuration()), song.GetAddedBy())
 }
 
 func fmtDuration(d time.Duration) string {

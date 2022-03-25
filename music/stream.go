@@ -36,8 +36,14 @@ func Stream(s *discordgo.Session, m *discordgo.MessageCreate) error {
 	options.RawOutput = true
 	options.Bitrate = 180
 	options.Application = "voip"
-	options.Volume = 24
+	volume := -40 // -70..-5 where -5 is max volume
+	// loudnorm -> Indicates the name of the normalization filter
+	// I, i     -> Indicates the integrated loudness (-70 to -5.0 with default -24.0)
+	// LRA, lra -> Indicates the loudness range (1.0 to 20.0 with default 7.0)
+	// TP, tp   -> Indicates the max true peak (-9.0 to 0.0 with default -2.0)
+	options.AudioFilter = fmt.Sprintf("loudnorm=I=%v:LRA=11:TP=-1.5", volume)
 	// options.StartTime = 110
+	// options.Volume = 8 // cant be used with audio filter
 
 	// TODO: Add error check to see if url is still valid
 

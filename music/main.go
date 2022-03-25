@@ -9,7 +9,6 @@ import (
 type DJ struct {
 	CurrentSong Song
 	Queue       []Song
-	Buffer      [][]byte
 	Discord     *Discord
 	Volume      float64
 	Paused      bool
@@ -44,7 +43,6 @@ func New(s *discordgo.Session) *DJ {
 	}
 
 	currentDJ = &DJ{
-		Buffer:      make([][]byte, 0),
 		NeedsToSkip: false,
 		Discord: &Discord{
 			Session: s,

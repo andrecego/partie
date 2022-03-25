@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os/exec"
 	"partie-bot/cache"
@@ -17,6 +18,30 @@ import (
 )
 
 var buffer = make([][]byte, 0)
+
+var ErrEmptyString = errors.New("Empty string")
+
+var processedMessages = map[string]bool{}
+
+var (
+	messageCreateCommands = map[string]func(s *discordgo.Session, m *discordgo.MessageCreate, args []string){
+		"music play": musicPlay,
+	}
+)
+
+func musicPlay(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
+	err := addToQueue(s, strings.Join(args, " "), m.ChannelID, m.Author)
+	if err != nil && !errors.Is(err, ErrEmptyString) {
+		fmt.Println(err)
+		return
+	}
+
+	err = music.Stream(s, m)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+}
 
 func getSearchResult(guildID, userID string) ([]repositories.YoutubeSearchResult, error) {
 	key := fmt.Sprintf("guilds:%s:users:%s:search_results", guildID, userID)
@@ -41,7 +66,6 @@ func MusicHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	// 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error getting search results: %s", err))
 	// 	return
 	// }
-
 	if !isCommand(m.Content) {
 		return
 	}
@@ -60,8 +84,6 @@ func MusicHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	switch args[0] {
 	case "play":
-		s.MessageReactionAdd(m.ChannelID, m.Message.ID, "✅")
-
 		query := strings.Join(args[1:], " ")
 		if query != "" {
 			err := addToQueue(s, strings.Join(args[1:], " "), m.ChannelID, m.Author)
@@ -110,6 +132,10 @@ func MusicHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func addToQueue(s *discordgo.Session, query, channelID string, author *discordgo.User) error {
+	if query == "" {
+		return fmt.Errorf("addToQueue: %w", ErrEmptyString)
+	}
+
 	finder := music.ParseQuery(query)
 
 	jsonInfo, err := finder.Download()
@@ -187,17 +213,78 @@ func PlaylistChannelHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	m.Content = "!music play " + m.Content
+	music.New(s)
 
-	fmt.Println(m.Content)
-
-	MusicHandler(s, m)
+	musicPlay(s, m, []string{m.Content})
 }
 
 func deleteMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
-	time.Sleep(250 * time.Millisecond)
+	time.Sleep(2500 * time.Millisecond)
 	err := s.ChannelMessageDelete(m.ChannelID, m.ID)
 	if err != nil {
 		fmt.Println("ERROR deleting message: ", err)
+	}
+}
+
+func AddMusicReactionHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
+	if m.ChannelID != "955146633203560468" { // playlist channel
+		return
+	}
+
+	if m.Author.ID == "943312702372192256" { // partie bot id
+		return
+	}
+
+	if !isCommand(m.Content) {
+		return
+	}
+
+	command, args := parseCommands(m, "music")
+	if command == "" || len(args) == 0 {
+		return
+	}
+
+	if args[0] == "changeImage" {
+		_, err := s.ChannelMessageEdit("955146633203560468", "955235579086389318", "https://preview.redd.it/xg4ke9fjvng41.jpg?width=1024&auto=webp&s=57153c7a8162153d2fd2a02b3d7bdc6085396c9f")
+		if err != nil {
+			fmt.Println(err)
+		}
+
+	}
+
+	if args[0] != "addReact" {
+		return
+	}
+
+	queueMessageID := "955235598292103199"
+	s.MessageReactionAdd(m.ChannelID, queueMessageID, "⏯️")
+	s.MessageReactionAdd(m.ChannelID, queueMessageID, "⏹️")
+	s.MessageReactionAdd(m.ChannelID, queueMessageID, "⏭️")
+}
+
+func ReactionControlHandler(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
+	if m.ChannelID != "955146633203560468" { // playlist channel
+		return
+	}
+
+	if m.UserID == "943312702372192256" { // partie bot id
+		return
+	}
+
+	switch m.Emoji.Name {
+	case "⏯️":
+		music.PlayPause()
+	case "⏹️":
+		// music.Stop()
+	case "⏭️":
+		music.Skip()
+	}
+
+	err := s.MessageReactionRemove(m.ChannelID, m.MessageID, m.Emoji.Name, m.UserID)
+	if err != nil {
+		err = s.MessageReactionRemove(m.ChannelID, m.MessageID, m.Emoji.ID, m.UserID)
+		if err != nil {
+			fmt.Println("ERROR removing reaction: ", err)
+		}
 	}
 }

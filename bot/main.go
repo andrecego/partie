@@ -65,7 +65,7 @@ func Start() {
 	// Adding handler function to handle our messages using AddHandler from discordgo package. We will declare messageHandler function later.
 	goBot.AddHandler(pingHandler)
 	// goBot.AddHandler(notifyBadNameHandler) // roles ok, but not moving back to channel
-	goBot.AddHandler(allEventsHandler)
+	// goBot.AddHandler(allEventsHandler)
 	goBot.AddHandler(subscribeToNameHandler)
 	goBot.AddHandler(stopStreamHandler)
 	goBot.AddHandler(addBlockedUserStreamHandler)
@@ -76,6 +76,8 @@ func Start() {
 	goBot.AddHandler(commands.RollD20Handler)
 	goBot.AddHandler(commands.MusicHandler)
 	goBot.AddHandler(commands.PlaylistChannelHandler)
+	goBot.AddHandler(commands.AddMusicReactionHandler)
+	goBot.AddHandler(commands.ReactionControlHandler)
 	// goBot.AddHandler(streamStartHandler) // infinite looping
 
 	err = goBot.Open()
