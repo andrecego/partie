@@ -83,10 +83,21 @@ func fmtDuration(d time.Duration) string {
 }
 
 func truncate(s string, maxLen int) string {
-	if len(s) > maxLen {
-		return s[:maxLen] + "..."
+	length := len(s)
+	if length <= maxLen {
+		return s
 	}
-	return s
+
+	truncated := ""
+	count := 0
+	for _, char := range s {
+		truncated += string(char)
+		if count >= length {
+			break
+		}
+		count++
+	}
+	return truncated
 }
 
 func numberOfSongsInQueue() string {

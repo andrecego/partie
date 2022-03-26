@@ -23,7 +23,7 @@ func (y *Youtube) GetID() string {
 }
 
 func (y *Youtube) GetTitle() string {
-	titleNomalizedRegex := regexp.MustCompile(`(?P<Title>.*-.*)([\(\[\|].+)$`)
+	titleNomalizedRegex := regexp.MustCompile(`(?P<Title>.*[-:].*)([\(\[\|].+)$`)
 	matches := titleNomalizedRegex.FindStringSubmatch(y.Title)
 	titleIndex := titleNomalizedRegex.SubexpIndex("Title")
 	if titleIndex >= 0 && len(matches) > titleIndex {
