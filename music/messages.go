@@ -9,6 +9,8 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+const maxQueuePrintSize = 20
+
 func nowPlayingMessage() {
 	channelID := "943655307626823771"
 	song := currentDJ.CurrentSong
@@ -34,12 +36,23 @@ func getMessage() (string, *discordgo.MessageEmbed) {
 	queueMessage := "__**Queue:**__\n"
 	if len(currentDJ.Queue) > 0 {
 		queueSize := len(currentDJ.Queue)
-		printedQueue := make([]Song, queueSize)
-		copy(printedQueue, currentDJ.Queue)
+		var printedQueue []Song
+
+		if queueSize > maxQueuePrintSize {
+			queueMessage += fmt.Sprintf("And %d more songs\n", queueSize-maxQueuePrintSize)
+			queueSize = maxQueuePrintSize
+
+			printedQueue = make([]Song, maxQueuePrintSize)
+			copy(printedQueue, currentDJ.Queue[:maxQueuePrintSize])
+		} else {
+			printedQueue = make([]Song, queueSize)
+			copy(printedQueue, currentDJ.Queue)
+		}
 		ReverseSlice(printedQueue)
 		for i, song := range printedQueue {
 			queueMessage += fmt.Sprintf("%02d. %s\n", queueSize-i, formatSong(song))
 		}
+
 	} else {
 		queueMessage += "No songs in queue. Go add some! 🎵"
 	}

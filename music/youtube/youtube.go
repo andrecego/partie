@@ -8,6 +8,10 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+type YoutubeResult struct {
+	Entries []Youtube `json:"entries"`
+}
+
 type Youtube struct {
 	ID        string `json:"id"`
 	Title     string `json:"title"`
@@ -56,6 +60,13 @@ func (y *Youtube) GetVideoURL() string {
 var youtubeDefaultArgs = []string{
 	"/usr/local/bin/yt-dlp",
 	"--no-playlist",
-	"--dump-json",
+	"--dump-single-json",
 	"-x",
+}
+
+var youtubePlaylistArgs = []string{
+	"/usr/local/bin/yt-dlp",
+	"--dump-single-json",
+	"-x",
+	"--playlist-end 20",
 }

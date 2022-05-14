@@ -9,13 +9,13 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-func Stream(s *discordgo.Session, m *discordgo.MessageCreate) error {
+func Stream(s *discordgo.Session, message *discordgo.MessageCreate) error {
 	if currentDJ.CurrentSong != nil {
 		return nil
 	}
 
 	if currentDJ.Discord.VoiceConnection == nil {
-		vs, err := FindVoiceChannel(s, m.GuildID, m.Author.ID)
+		vs, err := FindVoiceChannel(s, message.GuildID, message.Author.ID)
 		if err != nil {
 			return fmt.Errorf("Error finding voice channel: %s", err)
 		}
@@ -61,14 +61,17 @@ func Stream(s *discordgo.Session, m *discordgo.MessageCreate) error {
 	for {
 		select {
 		case err = <-done:
-			if err != nil && err != io.EOF {
-				return fmt.Errorf("error streaming: %s", err)
+			if err == nil {
+				continue
 			}
 
 			if err == io.EOF {
 				currentDJ.CurrentSong = nil
-				Stream(s, m)
+				Stream(s, message)
+				return nil
 			}
+
+			return fmt.Errorf("error streaming: %s", err)
 
 		// case <-tickerS.C:
 		// 	stats := encodingSession.Stats()
@@ -91,7 +94,7 @@ func Stream(s *discordgo.Session, m *discordgo.MessageCreate) error {
 				currentDJ.NeedsToSkip = false
 				currentDJ.CurrentSong = nil
 				encodingSession.Cleanup()
-				Stream(s, m)
+				Stream(s, message)
 				continue
 			}
 		}

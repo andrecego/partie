@@ -7,6 +7,10 @@ import (
 
 func ParseQuery(query string) interfaces.Finder {
 	if youtube.MatchURL(query) {
+		if youtube.MatchPlaylist(query) {
+			return youtube.PlaylistParse(query)
+		}
+
 		return youtube.URLParse(query)
 	}
 
