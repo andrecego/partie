@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"partie-bot/cache"
 	"partie-bot/requests"
@@ -18,30 +19,26 @@ type YoutubeSearchResult struct {
 }
 
 func (r YoutubeSearchResult) Duration() int {
+	duration := 0
+
 	time := strings.Split(r.DurationRaw, ":")
-	timeInts := make([]int, len(time))
+	timeLen := len(time)
+	if timeLen > 3 {
+		return 0
+	}
+
 	for i, t := range time {
 		timeInt, err := strconv.Atoi(t)
 		if err != nil {
 			return 0
 		}
 
-		timeInts[i] = timeInt
+		power := timeLen - i - 1
+
+		duration += timeInt * int(math.Pow(60, float64(power)))
 	}
 
-	if len(time) == 1 {
-		return timeInts[0]
-	}
-
-	if len(time) == 2 {
-		return timeInts[0]*60 + timeInts[1]
-	}
-
-	if len(time) == 3 {
-		return timeInts[0]*60*60 + timeInts[1]*60 + timeInts[2]
-	}
-
-	return 0
+	return duration
 }
 
 func YoutubeSearch(query string) ([]YoutubeSearchResult, error) {
