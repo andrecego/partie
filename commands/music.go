@@ -109,6 +109,8 @@ func MusicHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		music.Skip()
 	case "search":
 		music.Search(strings.Join(args[1:], " "), m)
+	case "restart":
+		music.Restart(s, m.GuildID, m.Author.ID)
 	case "queue":
 		music.ShowQueue(m.ChannelID)
 	case "stream":
@@ -136,21 +138,40 @@ func addToQueue(s *discordgo.Session, query, channelID string, author *discordgo
 		return fmt.Errorf("addToQueue: %w", ErrEmptyString)
 	}
 
-	finder := music.ParseQuery(query)
+	queries := strings.Split(query, "\n")
 
-	jsonInfo, err := finder.Download()
-	if err != nil {
-		return fmt.Errorf("Error downloading video: %s", err)
+	for i := range queries {
+		finder := music.ParseQuery(queries[i])
+
+		jsonInfo, err := finder.Download()
+		if err != nil {
+			return fmt.Errorf("Error downloading video: %s", err)
+		}
+
+		var youtubeResult youtube.YoutubeResult
+		err = json.Unmarshal([]byte(jsonInfo), &youtubeResult)
+		if err != nil {
+			return fmt.Errorf("Error unmarshalling info file: %s", err)
+		}
+
+		if len(youtubeResult.Entries) == 0 {
+			var youtubeEntry youtube.Youtube
+			err = json.Unmarshal([]byte(jsonInfo), &youtubeEntry)
+			if err != nil {
+				return fmt.Errorf("Error unmarshalling info file: %s", err)
+			}
+
+			youtubeResult.Entries = append(youtubeResult.Entries, youtubeEntry)
+		}
+
+		for i := range youtubeResult.Entries {
+			fmt.Println("Item: ", i)
+			fmt.Println("Adding song: ", youtubeResult.Entries[i].Title)
+
+			youtubeResult.Entries[i].AddedBy = author
+			music.AddToQueue(&youtubeResult.Entries[i], channelID)
+		}
 	}
-
-	var song youtube.Youtube
-	err = json.Unmarshal([]byte(jsonInfo), &song)
-	if err != nil {
-		return fmt.Errorf("Error unmarshalling info file: %s", err)
-	}
-	song.AddedBy = author
-
-	music.AddToQueue(&song, channelID)
 
 	return nil
 }
@@ -218,6 +239,34 @@ func PlaylistChannelHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	musicPlay(s, m, []string{m.Content})
 }
 
+func PlaylistChannelStartHandler(s *discordgo.Session, guild *discordgo.GuildCreate) {
+
+	dogeID := "176049854001315850"
+	if guild.Guild.ID != dogeID {
+		return
+	}
+
+	playlistChannelID := "955146633203560468"
+	messages, err := s.ChannelMessages(playlistChannelID, 100, "", "955235598292103199", "")
+	if err != nil {
+		fmt.Println("Error getting messages:", err)
+		return
+	}
+
+	for _, message := range messages {
+		fmt.Println(message.Content)
+		if message.ID == "955235579086389318" || message.ID == "955235598292103199" {
+			continue
+		}
+
+		err := s.ChannelMessageDelete(playlistChannelID, message.ID)
+		if err != nil {
+			fmt.Println("Error deleting message:", err)
+		}
+	}
+
+}
+
 func deleteMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	time.Sleep(2500 * time.Millisecond)
 	err := s.ChannelMessageDelete(m.ChannelID, m.ID)
@@ -260,6 +309,7 @@ func AddMusicReactionHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	s.MessageReactionAdd(m.ChannelID, queueMessageID, "⏯️")
 	s.MessageReactionAdd(m.ChannelID, queueMessageID, "⏹️")
 	s.MessageReactionAdd(m.ChannelID, queueMessageID, "⏭️")
+	s.MessageReactionAdd(m.ChannelID, queueMessageID, "🔁")
 }
 
 func ReactionControlHandler(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
@@ -278,6 +328,8 @@ func ReactionControlHandler(s *discordgo.Session, m *discordgo.MessageReactionAd
 		// music.Stop()
 	case "⏭️":
 		music.Skip()
+	case "🔁":
+		music.Restart(s, m.GuildID, m.UserID)
 	}
 
 	err := s.MessageReactionRemove(m.ChannelID, m.MessageID, m.Emoji.Name, m.UserID)

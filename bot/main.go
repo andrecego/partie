@@ -76,6 +76,7 @@ func Start() {
 	goBot.AddHandler(commands.RollD20Handler)
 	goBot.AddHandler(commands.MusicHandler)
 	goBot.AddHandler(commands.PlaylistChannelHandler)
+	goBot.AddHandler(commands.PlaylistChannelStartHandler)
 	goBot.AddHandler(commands.AddMusicReactionHandler)
 	goBot.AddHandler(commands.ReactionControlHandler)
 	// goBot.AddHandler(streamStartHandler) // infinite looping

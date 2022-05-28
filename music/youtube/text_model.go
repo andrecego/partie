@@ -16,7 +16,11 @@ func (f textFinder) GetQuery() string {
 }
 
 func (f textFinder) Download() (string, error) {
-	err, stdout, stderr := system.ShellOut(textDownloadCommand(f.Query))
+	if f.Query == "" {
+		return "", ErrorNoQuery
+	}
+
+	err, stdout, stderr := system.ShellOut(textDownloadCommand(f.Query + " lyrics"))
 	if err != nil {
 		fmt.Println("Error downloading of youtube: ", err)
 		fmt.Println(stderr)
