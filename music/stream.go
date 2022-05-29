@@ -41,7 +41,7 @@ func Stream(s *discordgo.Session, message *discordgo.MessageCreate) error {
 	// I, i     -> Indicates the integrated loudness (-70 to -5.0 with default -24.0)
 	// LRA, lra -> Indicates the loudness range (1.0 to 20.0 with default 7.0)
 	// TP, tp   -> Indicates the max true peak (-9.0 to 0.0 with default -2.0)
-	options.AudioFilter = fmt.Sprintf("loudnorm=I=%v:LRA=11:TP=-1.5", volume)
+	options.AudioFilter = fmt.Sprintf("loudnorm=I=%v:LRA=11:TP=-5", volume)
 	// options.StartTime = 110
 	// options.Volume = 8 // cant be used with audio filter
 
@@ -65,7 +65,11 @@ func Stream(s *discordgo.Session, message *discordgo.MessageCreate) error {
 				continue
 			}
 
-			if err == io.EOF {
+			if err == io.EOF || err == io.ErrUnexpectedEOF {
+				if err == io.ErrUnexpectedEOF {
+					fmt.Printf("Skipping song `%v` due to unexpected EOF", song.GetTitle())
+				}
+
 				currentDJ.CurrentSong = nil
 				Stream(s, message)
 				return nil
