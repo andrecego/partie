@@ -1,12 +1,10 @@
 package commands
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os/exec"
 	"partie-bot/cache"
 	"partie-bot/music"
 	"partie-bot/music/youtube"
@@ -23,20 +21,29 @@ var ErrEmptyString = errors.New("Empty string")
 
 var processedMessages = map[string]bool{}
 
-var (
-	messageCreateCommands = map[string]func(s *discordgo.Session, m *discordgo.MessageCreate, args []string){
-		"music play": musicPlay,
-	}
-)
+// var (
+// 	messageCreateCommands = map[string]func(s *discordgo.Session, m *discordgo.MessageCreate, args []string){
+// 		"music play": musicPlay,
+// 	}
+// )
 
-func musicPlay(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
-	err := addToQueue(s, strings.Join(args, " "), m.ChannelID, m.Author)
+func addedBy(message *discordgo.MessageCreate) youtube.AddedBy {
+	return youtube.AddedBy{
+		User:    message.Author,
+		Guild:   &discordgo.Guild{ID: message.GuildID},
+		Channel: &discordgo.Channel{ID: message.ChannelID},
+	}
+}
+
+func musicPlay(session *discordgo.Session, message *discordgo.MessageCreate, args []string) {
+
+	err := addToQueue(session, strings.Join(args, " "), addedBy(message))
 	if err != nil && !errors.Is(err, ErrEmptyString) {
 		fmt.Println(err)
 		return
 	}
 
-	err = music.Stream(s, m)
+	err = music.Stream(session)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -86,21 +93,21 @@ func MusicHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	case "play":
 		query := strings.Join(args[1:], " ")
 		if query != "" {
-			err := addToQueue(s, strings.Join(args[1:], " "), m.ChannelID, m.Author)
+			err := addToQueue(s, strings.Join(args[1:], " "), addedBy(m))
 			if err != nil {
 				fmt.Println(err)
 				return
 			}
 		}
 
-		err := music.Stream(s, m)
+		err := music.Stream(s)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 	case "add":
 		s.ChannelMessageSend(m.ChannelID, "Adding music")
-		err := addToQueue(s, strings.Join(args[1:], " "), m.ChannelID, m.Author)
+		err := addToQueue(s, strings.Join(args[1:], " "), addedBy(m))
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -114,7 +121,7 @@ func MusicHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	case "queue":
 		music.ShowQueue(m.ChannelID)
 	case "stream":
-		err := music.Stream(s, m)
+		err := music.Stream(s)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -133,7 +140,7 @@ func MusicHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
-func addToQueue(s *discordgo.Session, query, channelID string, author *discordgo.User) error {
+func addToQueue(s *discordgo.Session, query string, addedBy youtube.AddedBy) error {
 	if query == "" {
 		return fmt.Errorf("addToQueue: %w", ErrEmptyString)
 	}
@@ -168,75 +175,32 @@ func addToQueue(s *discordgo.Session, query, channelID string, author *discordgo
 			fmt.Println("Item: ", i)
 			fmt.Println("Adding song: ", youtubeResult.Entries[i].Title)
 
-			youtubeResult.Entries[i].AddedBy = author
-			music.AddToQueue(&youtubeResult.Entries[i], channelID)
+			youtubeResult.Entries[i].AddedBy = addedBy
+			music.AddToQueue(&youtubeResult.Entries[i])
 		}
 	}
 
 	return nil
 }
 
-func shellout(command string) (error, string, string) {
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	fmt.Println("Running command:", command)
-	cmd := exec.Command("bash", "-c", command)
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	return err, stdout.String(), stderr.String()
-}
-
-// playSound plays the current buffer to the provided channel.
-func playSound(s *discordgo.Session, guildID, channelID string) (err error) {
-
-	// Join the provided voice channel.
-	vc, err := s.ChannelVoiceJoin(guildID, channelID, false, true)
-	if err != nil {
-		return err
-	}
-
-	// Sleep for a specified amount of time before playing the sound
-	time.Sleep(250 * time.Millisecond)
-
-	// Start speaking.
-	vc.Speaking(true)
-
-	// Send the buffer data.
-	for _, buff := range buffer {
-		vc.OpusSend <- buff
-	}
-
-	// Stop speaking
-	vc.Speaking(false)
-
-	// Sleep for a specificed amount of time before ending.
-	time.Sleep(250 * time.Millisecond)
-
-	// Disconnect from the provided voice channel.
-	vc.Disconnect()
-
-	return nil
-}
-
-func PlaylistChannelHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.ChannelID != "955146633203560468" { // playlist channel
+func PlaylistChannelHandler(session *discordgo.Session, message *discordgo.MessageCreate) {
+	if message.ChannelID != "955146633203560468" { // playlist channel
 		return
 	}
 
-	if m.Author.ID == "943312702372192256" { // partie bot id
+	if message.Author.ID == "943312702372192256" { // partie bot id
 		return
 	}
 
-	go deleteMessage(s, m)
+	go deleteMessage(session, message)
 
-	if isCommand(m.Content) {
+	if isCommand(message.Content) {
 		return
 	}
 
-	music.New(s)
+	music.New(session)
 
-	musicPlay(s, m, []string{m.Content})
+	musicPlay(session, message, []string{message.Content})
 }
 
 func PlaylistChannelStartHandler(s *discordgo.Session, guild *discordgo.GuildCreate) {

@@ -29,6 +29,10 @@ type Song interface {
 	GetVideoURL() string
 	GetURL() string
 	GetThumbnail() string
+	GetStartTime() int
+	GetGuildID() string
+	GetChannelID() string
+	GetAuthorID() string
 }
 
 var (

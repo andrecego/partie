@@ -34,25 +34,35 @@ func Resume() {
 	currentDJ.Paused = false
 }
 
-func AddToQueue(song Song, channelID string) {
+func AddToQueue(song Song) {
 	currentDJ.Queue = append(currentDJ.Queue, song)
 	updateQueueMessage()
-	addedToQueueMessage(song, channelID)
+	addedToQueueMessage(song)
 }
 
 func NextSong() Song {
+	nextSong := fetchNextSong()
 	fmt.Println("Next song...")
+
+	go updateQueueMessage()
+	return nextSong
+}
+
+func fetchNextSong() Song {
 	if len(currentDJ.Queue) == 0 {
+		currentDJ.Queue = nil
 		return nil
 	}
 
 	if len(currentDJ.Queue) == 1 {
 		currentDJ.CurrentSong = currentDJ.Queue[0]
 		currentDJ.Queue = nil
+
 		return currentDJ.CurrentSong
 	}
 
 	currentDJ.CurrentSong = currentDJ.Queue[0]
 	currentDJ.Queue = currentDJ.Queue[1:]
+
 	return currentDJ.CurrentSong
 }

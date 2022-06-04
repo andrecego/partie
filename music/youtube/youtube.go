@@ -19,7 +19,14 @@ type Youtube struct {
 	VideoURL  string `json:"webpage_url"`
 	URL       string `json:"url"`
 	Thumbnail string `json:"thumbnail"`
-	AddedBy   *discordgo.User
+	StartTime int
+	AddedBy   AddedBy
+}
+
+type AddedBy struct {
+	Guild   *discordgo.Guild
+	Channel *discordgo.Channel
+	User    *discordgo.User
 }
 
 func (y *Youtube) GetID() string {
@@ -42,7 +49,19 @@ func (y *Youtube) GetDuration() time.Duration {
 }
 
 func (y *Youtube) GetAddedBy() string {
-	return fmt.Sprintf("<@%s>", y.AddedBy.ID)
+	return fmt.Sprintf("<@%s>", y.AddedBy.User.ID)
+}
+
+func (y *Youtube) GetAuthorID() string {
+	return y.AddedBy.User.ID
+}
+
+func (y *Youtube) GetChannelID() string {
+	return y.AddedBy.Channel.ID
+}
+
+func (y *Youtube) GetGuildID() string {
+	return y.AddedBy.Guild.ID
 }
 
 func (y *Youtube) GetURL() string {
@@ -51,6 +70,10 @@ func (y *Youtube) GetURL() string {
 
 func (y *Youtube) GetThumbnail() string {
 	return y.Thumbnail
+}
+
+func (y *Youtube) GetStartTime() int {
+	return y.StartTime
 }
 
 func (y *Youtube) GetVideoURL() string {

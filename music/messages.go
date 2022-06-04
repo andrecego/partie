@@ -70,7 +70,8 @@ func queueMessage(channelID string) {
 	currentDJ.Discord.Session.ChannelMessageSendComplex(channelID, message)
 }
 
-func addedToQueueMessage(song Song, channelID string) {
+func addedToQueueMessage(song Song) {
+	channelID := song.GetChannelID()
 	if channelID == "955146633203560468" { // playlist channel id
 		return
 	}
