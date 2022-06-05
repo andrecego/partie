@@ -53,6 +53,8 @@ func New(s *discordgo.Session) *DJ {
 		},
 	}
 
+	updateQueueMessage()
+
 	return currentDJ
 }
 

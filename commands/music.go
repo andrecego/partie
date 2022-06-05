@@ -232,7 +232,7 @@ func PlaylistChannelStartHandler(s *discordgo.Session, guild *discordgo.GuildCre
 }
 
 func deleteMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
-	time.Sleep(2500 * time.Millisecond)
+	time.Sleep(300 * time.Millisecond)
 	err := s.ChannelMessageDelete(m.ChannelID, m.ID)
 	if err != nil {
 		fmt.Println("ERROR deleting message: ", err)
