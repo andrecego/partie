@@ -9,6 +9,7 @@ import (
 	"partie-bot/music"
 	"partie-bot/music/youtube"
 	"partie-bot/repositories"
+	"strconv"
 	"strings"
 	"time"
 
@@ -199,6 +200,30 @@ func PlaylistChannelHandler(session *discordgo.Session, message *discordgo.Messa
 	}
 
 	music.New(session)
+	if isPrefixlessCommands(message.Content) {
+		command, args := commandParse(message.Content)
+		switch command {
+		case "pause", "play":
+			music.PlayPause()
+		case "skip":
+			music.Skip()
+		case "restart":
+			music.Restart(session, message.GuildID, message.Author.ID)
+		case "remove", "delete":
+			if len(args) == 0 {
+				return
+			}
+
+			queueNumber, err := strconv.Atoi(args[0])
+			if err != nil {
+				fmt.Println("Error converting queue number to int: ", err)
+				return
+			}
+
+			music.Remove(queueNumber)
+		}
+		return
+	}
 
 	musicPlay(session, message, []string{message.Content})
 }

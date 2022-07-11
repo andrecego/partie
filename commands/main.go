@@ -6,8 +6,32 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+var prefixlessCommands = []string{
+	"skip",
+	"pause",
+	"play",
+	"restart",
+	"remove",
+	"delete",
+}
+
 func isCommand(message string) bool {
 	return strings.HasPrefix(message, "!")
+}
+
+func isPrefixlessCommands(message string) bool {
+	for _, command := range prefixlessCommands {
+		if strings.HasPrefix(message, command) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func commandParse(message string) (string, []string) {
+	args := strings.Split(message, " ")
+	return args[0], args[1:]
 }
 
 func parseCommand(command string) string {

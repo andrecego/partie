@@ -40,6 +40,17 @@ func AddToQueue(song Song) {
 	addedToQueueMessage(song)
 }
 
+func Remove(queueNumber int) {
+	fmt.Println("Removing song from queue: ", queueNumber)
+	index := queueNumber - 1
+	if index < 0 || index >= len(currentDJ.Queue) {
+		return
+	}
+
+	currentDJ.Queue = append(currentDJ.Queue[:index], currentDJ.Queue[index+1:]...)
+	updateQueueMessage()
+}
+
 func NextSong() Song {
 	nextSong := fetchNextSong()
 	fmt.Println("Next song...")

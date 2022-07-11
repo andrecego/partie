@@ -4,3 +4,4 @@ src/node_modules/
 config.json
 .todo
 yt-dlp-example.json
+.vscode/
