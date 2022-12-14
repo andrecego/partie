@@ -5,6 +5,7 @@ RUN apt-get update -qq && apt-get install -y \
   ca-certificates \
   openssl \
   iputils-ping \
+  ffmpeg \
   && update-ca-certificates
 
 # install yt-dlp
