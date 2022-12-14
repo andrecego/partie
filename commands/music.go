@@ -136,6 +136,9 @@ func MusicHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		s.ChannelMessageSend(m.ChannelID, "Resuming music")
 	case "stop":
 		s.ChannelMessageSend(m.ChannelID, "Stopping music")
+	case "createPlaylistChannel":
+		s.ChannelMessageSend("955146633203560468", "Creating playlist channel")
+		s.ChannelMessageSend("955146633203560468", "Creating playlist channel")
 	default:
 		s.ChannelMessageSend(m.ChannelID, "Usage: !music <play/pause/stop>")
 	}
@@ -189,7 +192,7 @@ func PlaylistChannelHandler(session *discordgo.Session, message *discordgo.Messa
 		return
 	}
 
-	if message.Author.ID == "943312702372192256" { // partie bot id
+	if message.Author.ID == "985002886087999608" { // partie bot id
 		return
 	}
 
@@ -236,7 +239,7 @@ func PlaylistChannelStartHandler(s *discordgo.Session, guild *discordgo.GuildCre
 	}
 
 	playlistChannelID := "955146633203560468"
-	messages, err := s.ChannelMessages(playlistChannelID, 100, "", "955235598292103199", "")
+	messages, err := s.ChannelMessages(playlistChannelID, 100, "", "1052568412003520522", "")
 	if err != nil {
 		fmt.Println("Error getting messages:", err)
 		return
@@ -244,7 +247,7 @@ func PlaylistChannelStartHandler(s *discordgo.Session, guild *discordgo.GuildCre
 
 	for _, message := range messages {
 		fmt.Println(message.Content)
-		if message.ID == "955235579086389318" || message.ID == "955235598292103199" {
+		if message.ID == "1052568410799755264" || message.ID == "1052568412003520522" {
 			continue
 		}
 
@@ -269,7 +272,7 @@ func AddMusicReactionHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	if m.Author.ID == "943312702372192256" { // partie bot id
+	if m.Author.ID == "985002886087999608" { // partie bot id
 		return
 	}
 
@@ -283,7 +286,7 @@ func AddMusicReactionHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if args[0] == "changeImage" {
-		_, err := s.ChannelMessageEdit("955146633203560468", "955235579086389318", "https://preview.redd.it/xg4ke9fjvng41.jpg?width=1024&auto=webp&s=57153c7a8162153d2fd2a02b3d7bdc6085396c9f")
+		_, err := s.ChannelMessageEdit("955146633203560468", "1052568410799755264", "https://preview.redd.it/xg4ke9fjvng41.jpg?width=1024&auto=webp&s=57153c7a8162153d2fd2a02b3d7bdc6085396c9f")
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -294,7 +297,7 @@ func AddMusicReactionHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	queueMessageID := "955235598292103199"
+	queueMessageID := "1052568412003520522"
 	s.MessageReactionAdd(m.ChannelID, queueMessageID, "⏯️")
 	s.MessageReactionAdd(m.ChannelID, queueMessageID, "⏹️")
 	s.MessageReactionAdd(m.ChannelID, queueMessageID, "⏭️")
@@ -306,7 +309,7 @@ func ReactionControlHandler(s *discordgo.Session, m *discordgo.MessageReactionAd
 		return
 	}
 
-	if m.UserID == "943312702372192256" { // partie bot id
+	if m.UserID == "985002886087999608" { // partie bot id
 		return
 	}
 

@@ -138,7 +138,7 @@ func ReverseSlice(data interface{}) {
 }
 
 func updateQueueMessage() {
-	messageID := "955235598292103199"
+	messageID := "1052568412003520522"
 	channelID := "955146633203560468"
 
 	content, embed := getMessage()
