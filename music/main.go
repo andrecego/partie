@@ -37,7 +37,7 @@ type Song interface {
 
 var (
 	currentDJ         *DJ
-	delayToSpeak      = 250 * time.Millisecond
+	delayToSpeak      = 50 * time.Millisecond
 	timesToDisconnect = 60 * 5
 )
 

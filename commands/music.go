@@ -332,3 +332,20 @@ func ReactionControlHandler(s *discordgo.Session, m *discordgo.MessageReactionAd
 		}
 	}
 }
+
+// DisconnectedHandler is called when the bot is disconnected from the server
+func DisconnectedHandler(s *discordgo.Session, vsu *discordgo.VoiceStateUpdate) {
+	// check if the user updated is the bot
+	if vsu.UserID != s.State.User.ID {
+		return
+	}
+
+	// check if the bot is being disconnected from the server
+	if vsu.ChannelID != "" {
+		return
+	}
+
+	// call the music cleanup function
+	music.Cleanup()
+	fmt.Println("Disconnected from server, music cleanup called")
+}

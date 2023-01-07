@@ -69,6 +69,10 @@ func Stream(session *discordgo.Session) error {
 		// 	fmt.Printf("Playback: %10s, Transcode Stats: Time: %5s, Size: %5dkB, Bitrate: %6.2fkB, Speed: %5.1fx\r", playbackPosition, stats.Duration.String(), stats.Size, stats.Bitrate, stats.Speed)
 
 		case <-tickerMs.C:
+			if currentDJ == nil {
+				return nil
+			}
+
 			if currentDJ.Paused && !streamSession.Paused() {
 				streamSession.SetPaused(true)
 				continue

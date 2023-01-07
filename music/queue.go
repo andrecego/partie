@@ -34,6 +34,10 @@ func Resume() {
 	currentDJ.Paused = false
 }
 
+func Cleanup() {
+	currentDJ = nil
+}
+
 func AddToQueue(song Song) {
 	currentDJ.Queue = append(currentDJ.Queue, song)
 	updateQueueMessage()
