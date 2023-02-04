@@ -440,8 +440,11 @@ func changeVoiceName(s *discordgo.Session, m *discordgo.MessageCreate) {
 		fmt.Println("Changing voice name")
 
 		letterOfTheDay := fmt.Sprintf("[%s] - Letra do dia ", randSeq(1))
+		channelEdit := discordgo.ChannelEdit{
+			Name: letterOfTheDay,
+		}
 
-		_, err := s.ChannelEdit("833404286109089822", letterOfTheDay)
+		_, err := s.ChannelEdit("833404286109089822", &channelEdit)
 		if err != nil {
 			fmt.Println(err.Error())
 		}

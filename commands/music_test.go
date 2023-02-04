@@ -38,6 +38,7 @@ func TestMusicPlay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	roleParams := discordgo.RoleParams{}
 
 	t.Logf("Name: %s", guildBefore.Name)
 	t.Logf("Channels: %d", len(guildBefore.Channels))
@@ -45,7 +46,7 @@ func TestMusicPlay(t *testing.T) {
 
 	t.Logf("Roles before change: %d", len(guildBefore.Roles))
 
-	_, err = session.GuildRoleCreate(guildBefore.ID)
+	_, err = session.GuildRoleCreate(guildBefore.ID, &roleParams)
 	if err != nil {
 		t.Fatal(err)
 	}
