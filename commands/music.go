@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/rollbar/rollbar-go"
 )
 
 var buffer = make([][]byte, 0)
@@ -178,6 +179,10 @@ func addToQueue(s *discordgo.Session, query string, addedBy youtube.AddedBy) err
 		for i := range youtubeResult.Entries {
 			fmt.Println("Item: ", i)
 			fmt.Println("Adding song: ", youtubeResult.Entries[i].Title)
+
+			rollbar.SetPerson(addedBy.User.ID, addedBy.User.Username, "")
+			rollbar.Info("Adding song: ", youtubeResult.Entries[i].Title)
+			rollbar.ClearPerson()
 
 			youtubeResult.Entries[i].AddedBy = addedBy
 			music.AddToQueue(&youtubeResult.Entries[i])
