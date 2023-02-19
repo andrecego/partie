@@ -181,7 +181,10 @@ func addToQueue(s *discordgo.Session, query string, addedBy youtube.AddedBy) err
 			fmt.Println("Adding song: ", youtubeResult.Entries[i].Title)
 
 			rollbar.SetPerson(addedBy.User.ID, addedBy.User.Username, "")
-			rollbar.Info("Adding song: ", youtubeResult.Entries[i].Title)
+			rollbar.Info("Song added", map[string]interface{}{
+				"title":    youtubeResult.Entries[i].Title,
+				"videoURL": youtubeResult.Entries[i].VideoURL,
+			})
 			rollbar.ClearPerson()
 
 			youtubeResult.Entries[i].AddedBy = addedBy

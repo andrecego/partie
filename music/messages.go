@@ -81,6 +81,9 @@ func addedToQueueMessage(song Song) {
 }
 
 func formatSong(song Song) string {
+	fmt.Println("Format song:")
+	fmt.Println(reflect.TypeOf(song))
+	fmt.Println(reflect.ValueOf(song).Elem())
 	return fmt.Sprintf("%s [%s] - %s", truncate(song.GetTitle(), 50), fmtDuration(song.GetDuration()), song.GetAddedBy())
 }
 
