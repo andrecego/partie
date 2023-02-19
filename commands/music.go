@@ -188,8 +188,9 @@ func addToQueue(s *discordgo.Session, query string, addedBy youtube.AddedBy) err
 			rollbar.ClearPerson()
 
 			youtubeResult.Entries[i].AddedBy = addedBy
-			music.AddToQueue(&youtubeResult.Entries[i])
+			music.AddAsyncToQueue(&youtubeResult.Entries[i])
 		}
+		music.UpdateQueueMessage()
 	}
 
 	return nil

@@ -38,10 +38,18 @@ func Cleanup() {
 	currentDJ = nil
 }
 
+func AddAsyncToQueue(song Song) {
+	currentDJ.Queue = append(currentDJ.Queue, song)
+}
+
 func AddToQueue(song Song) {
 	currentDJ.Queue = append(currentDJ.Queue, song)
 	updateQueueMessage()
 	addedToQueueMessage(song)
+}
+
+func UpdateQueueMessage() {
+	updateQueueMessage()
 }
 
 func Remove(queueNumber int) {
