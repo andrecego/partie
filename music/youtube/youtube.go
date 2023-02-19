@@ -15,20 +15,27 @@ type YoutubeResult struct {
 }
 
 type Youtube struct {
-	ID        string `json:"id"`
-	Title     string `json:"title"`
-	Duration  int    `json:"duration"`
-	VideoURL  string `json:"webpage_url"`
-	URL       string `json:"url"`
-	Thumbnail string `json:"thumbnail"`
-	StartTime int
-	AddedBy   AddedBy
+	ID         string             `json:"id"`
+	Title      string             `json:"title"`
+	Duration   int                `json:"duration"`
+	VideoURL   string             `json:"webpage_url"`
+	URL        string             `json:"url"`
+	Thumbnail  string             `json:"thumbnail"`
+	Thumbnails []YoutubeThumbnail `json:"thumbnails"`
+	StartTime  int
+	AddedBy    AddedBy
 }
 
 type AddedBy struct {
 	Guild   *discordgo.Guild
 	Channel *discordgo.Channel
 	User    *discordgo.User
+}
+
+type YoutubeThumbnail struct {
+	URL    string `json:"url"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
 }
 
 func (y *Youtube) GetID() string {
@@ -76,13 +83,17 @@ func (y *Youtube) GetURL() string {
 			return ""
 		}
 
-		return strings.TrimSpace(stdout)
+		y.URL = strings.TrimSpace(stdout)
 	}
 
 	return y.URL
 }
 
 func (y *Youtube) GetThumbnail() string {
+	if y.Thumbnail == "" {
+		return y.Thumbnails[len(y.Thumbnails)-1].URL
+	}
+
 	return y.Thumbnail
 }
 

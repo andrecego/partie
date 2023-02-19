@@ -32,6 +32,10 @@ func Stream(session *discordgo.Session) error {
 		}
 	}
 
+	if len(currentDJ.Queue) > 0 {
+		go currentDJ.Queue[0].GetURL()
+	}
+
 	encodingSession, err := dca.EncodeFile(currentSong.GetURL(), options(0))
 	if err != nil {
 		return fmt.Errorf("error encoding: %s", err)
