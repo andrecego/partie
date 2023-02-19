@@ -2,7 +2,9 @@ package youtube
 
 import (
 	"fmt"
+	"partie-bot/system"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -65,6 +67,18 @@ func (y *Youtube) GetGuildID() string {
 }
 
 func (y *Youtube) GetURL() string {
+	if MatchURL(y.URL) {
+		getUrlArgs := append(youtubeFindUrlArgs, y.URL)
+		err, stdout, stderr := system.ShellOut(strings.Join(getUrlArgs, " "))
+		if err != nil {
+			fmt.Println("Error getting url from youtube: ", err)
+			fmt.Println(stderr)
+			return ""
+		}
+
+		return strings.TrimSpace(stdout)
+	}
+
 	return y.URL
 }
 
@@ -87,8 +101,16 @@ var youtubeDefaultArgs = []string{
 	"-x",
 }
 
+var youtubeFindUrlArgs = []string{
+	"/usr/local/bin/yt-dlp",
+	"--no-playlist",
+	"-x",
+	"--get-url",
+}
+
 var youtubePlaylistArgs = []string{
 	"/usr/local/bin/yt-dlp",
+	"--flat-playlist",
 	"--dump-single-json",
 	"-x",
 	"--playlist-end 20",
