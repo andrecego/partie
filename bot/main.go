@@ -63,9 +63,9 @@ func Start() {
 	goBot.Identify.Intents = discordgo.IntentsAll
 
 	// Adding handler function to handle our messages using AddHandler from discordgo package. We will declare messageHandler function later.
-	goBot.AddHandler(pingHandler)
 	// goBot.AddHandler(notifyBadNameHandler) // roles ok, but not moving back to channel
 	// goBot.AddHandler(allEventsHandler)
+	goBot.AddHandler(pingHandler)
 	goBot.AddHandler(subscribeToNameHandler)
 	goBot.AddHandler(stopStreamHandler)
 	goBot.AddHandler(addBlockedUserStreamHandler)
