@@ -4,8 +4,13 @@ services:
   bot:
     build: .
     command: /bin/sh -c "go run main.go"
+    restart: always
+    volumes:
+      - .:/server
     links:
-      - "db"
+      - "redis"
+    env_file:
+      - .env
 
   redis:
     image: redis:7.0-rc-alpine

@@ -32,6 +32,7 @@ func Stream(session *discordgo.Session) error {
 		}
 	}
 
+	// If there are more songs in the queue, start downloading the next song
 	if len(currentDJ.Queue) > 0 {
 		go currentDJ.Queue[0].GetURL()
 	}
@@ -73,7 +74,7 @@ func Stream(session *discordgo.Session) error {
 		// 	fmt.Printf("Playback: %10s, Transcode Stats: Time: %5s, Size: %5dkB, Bitrate: %6.2fkB, Speed: %5.1fx\r", playbackPosition, stats.Duration.String(), stats.Size, stats.Bitrate, stats.Speed)
 
 		case <-tickerMs.C:
-			if currentDJ == nil {
+			if currentDJ == nil || currentDJ.CurrentSong == nil {
 				return nil
 			}
 

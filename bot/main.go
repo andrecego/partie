@@ -1,14 +1,11 @@
 package bot
 
 import (
-	"context"
-	"errors"
 	"fmt" //to print errors
 	"math/rand"
-	"partie-bot/cache"
 	"partie-bot/commands"
 	"partie-bot/config" //importing our config package which we have created above
-	"regexp"
+	"partie-bot/voice_chat"
 	"strings"
 	"time"
 
@@ -45,21 +42,17 @@ func Start() {
 		panic(err)
 	}
 
-	//Handling error
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
 	// Making our bot a user using User function .
 	u, err := goBot.User("@me")
 	//Handlinf error
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println("Error obtaining account details,", err)
 		return
 	}
 	// Storing our id from u to BotId .
-	BotId = u.ID
+	config.BotId = u.ID
 
+	// TODO: Improve intents to only the necessary ones
 	goBot.Identify.Intents = discordgo.IntentsAll
 
 	// Adding handler function to handle our messages using AddHandler from discordgo package. We will declare messageHandler function later.
@@ -67,12 +60,7 @@ func Start() {
 	// goBot.AddHandler(allEventsHandler)
 	goBot.AddHandler(pingHandler)
 	goBot.AddHandler(subscribeToNameHandler)
-	goBot.AddHandler(stopStreamHandler)
-	goBot.AddHandler(addBlockedUserStreamHandler)
-	goBot.AddHandler(removeBlockedUserStreamHandler)
-	goBot.AddHandler(listBlockedUserStreamHandler)
-	goBot.AddHandler(isStreamingHandler)
-	goBot.AddHandler(voiceStateUpdateHandler)
+	commands.AddStreamBlockCommands(goBot)
 	goBot.AddHandler(commands.RollD20Handler)
 	goBot.AddHandler(commands.MusicHandler)
 	goBot.AddHandler(commands.PlaylistChannelHandler)
@@ -97,180 +85,48 @@ func msgWithPrefix(name string) string {
 	return config.BotPrefix + name
 }
 
-func isStreamingHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
-	contents := strings.Split(m.Content, " ")
+// func isStreamingHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
+// 	contents := strings.Split(m.Content, " ")
 
-	if contents[0] != msgWithPrefix("streaming?") {
-		return
-	}
+// 	if contents[0] != msgWithPrefix("streaming?") {
+// 		return
+// 	}
 
-	if len(contents) != 2 {
-		_, _ = s.ChannelMessageSend(m.ChannelID, "Invalid option: should be `!streaming? @user`")
-		return
-	}
+// 	if len(contents) != 2 {
+// 		_, _ = s.ChannelMessageSend(m.ChannelID, "Invalid option: should be `!streaming? @user`")
+// 		return
+// 	}
 
-	userIdRegex := regexp.MustCompile(`<@!(\d*)>`)
-	matches := userIdRegex.FindStringSubmatch(contents[1])
-	userID := matches[1]
+// 	userIdRegex := regexp.MustCompile(`<@(\d*)>`)
+// 	matches := userIdRegex.FindStringSubmatch(contents[1])
+// 	userID := matches[1]
 
-	vsu, err := s.State.VoiceState(m.GuildID, userID)
-	if err != nil {
-		_, _ = s.ChannelMessageSend(m.ChannelID, "Error getting voice state: "+err.Error())
-		return
-	}
+// 	vsu, err := s.State.VoiceState(m.GuildID, userID)
+// 	if err != nil {
+// 		_, _ = s.ChannelMessageSend(m.ChannelID, "Error getting voice state: "+err.Error())
+// 		return
+// 	}
 
-	_, _ = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("The user is streaming? %v", vsu.SelfStream))
-}
+// 	_, _ = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("The user is streaming? %v", vsu.SelfStream))
+// }
 
-func addBlockedUserStreamHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
-	contents := strings.Split(m.Content, " ")
-
-	if contents[0] != msgWithPrefix("blockstream") {
-		return
-	}
-
-	if len(contents) != 2 {
-		_, _ = s.ChannelMessageSend(m.ChannelID, "Invalid option: should be `!blockstream @user`")
-		return
-	}
-
-	userIdRegex := regexp.MustCompile(`<@!(\d*)>`)
-	matches := userIdRegex.FindStringSubmatch(contents[1])
-	userID := matches[1]
-
-	err := cache.New().Client.SAdd(context.TODO(), stopStreamKey(m.GuildID), userID).Err()
-	if err != nil {
-		_, _ = s.ChannelMessageSend(m.ChannelID, "Error adding user to blocked list: "+err.Error())
-		return
-	}
-
-	vsu, err := s.State.VoiceState(m.GuildID, userID)
-	if err != nil {
-		_, _ = s.ChannelMessageSend(m.ChannelID, "Error getting voice state: "+err.Error())
-		return
-	}
-
-	voiceStateUpdateHandler(s, &discordgo.VoiceStateUpdate{VoiceState: vsu})
-
-	s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
-}
-
-func removeBlockedUserStreamHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
-	contents := strings.Split(m.Content, " ")
-
-	if contents[0] != msgWithPrefix("rmblocked") {
-		return
-	}
-
-	if len(contents) != 2 {
-		_, _ = s.ChannelMessageSend(m.ChannelID, "Invalid option: should be `!rmblocked @user`")
-		return
-	}
-
-	userIdRegex := regexp.MustCompile(`<@!(\d*)>`)
-	matches := userIdRegex.FindStringSubmatch(contents[1])
-	userID := matches[1]
-
-	err := cache.New().Client.SRem(context.TODO(), stopStreamKey(m.GuildID), userID).Err()
-	if err != nil {
-		_, _ = s.ChannelMessageSend(m.ChannelID, "Error removing user of blocked list: "+err.Error())
-		return
-	}
-
-	s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
-}
-
-func listBlockedUserStreamHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.Content != msgWithPrefix("listblocked") {
-		return
-	}
-
-	blockedIds, err := cache.New().Client.SMembers(context.TODO(), stopStreamKey(m.GuildID)).Result()
-	if err != nil {
-		_, _ = s.ChannelMessageSend(m.ChannelID, "Error listing blocked users: "+err.Error())
-		return
-	}
-
-	if len(blockedIds) == 0 {
-		_, _ = s.ChannelMessageSend(m.ChannelID, "No blocked users")
-		return
-	}
-
-	message := "Users blocked:\n"
-	for _, id := range blockedIds {
-		message = message + "<@!" + id + ">" + "\n"
-	}
-
-	_, _ = s.ChannelMessageSend(m.ChannelID, message)
-}
-
-func stopStreamKey(guildID string) string {
-	return "guilds:" + guildID + ":blockStream"
-}
-
-func allEventsHandler(s *discordgo.Session, e *discordgo.Event) {
+func allEventsHandler(_ *discordgo.Session, e *discordgo.Event) {
 	fmt.Println()
 	fmt.Println(e.Type, " - ", string(e.RawData))
 }
 
-func voiceStateUpdateHandler(s *discordgo.Session, vsu *discordgo.VoiceStateUpdate) {
-	if vsu.UserID == BotId || vsu.ChannelID == afkChannel {
-		return
-	}
+// func streamStartHandler(s *discordgo.Session, vsu *discordgo.VoiceStateUpdate) {
+// 	if vsu.ChannelID == "" {
+// 		return
+// 	}
 
-	blockedIds, err := cache.New().Client.SMembers(context.TODO(), stopStreamKey(vsu.GuildID)).Result()
-	if err != nil {
-		fmt.Println("Error getting blocked users: " + err.Error())
-		return
-	}
+// 	if vsu.UserID == BotId || vsu.UserID != "176049727945572352" {
+// 		return
+// 	}
 
-	for _, id := range blockedIds {
-		if id == vsu.UserID {
-			if vsu.SelfStream == true {
-				_, _ = s.ChannelMessageSend("943655307626823771", "Hey <@"+vsu.UserID+">, no stream for you.")
-				moveUserBackAndForward(s, vsu.GuildID, vsu.UserID)
-			}
-
-			return
-		}
-	}
-}
-
-func handleVoiceStateUpdate(s *discordgo.Session, vsu VoiceStatusUpdate) {
-	if vsu.UserID == BotId || vsu.ChannelID == afkChannel {
-		return
-	}
-
-	blockedIds, err := cache.New().Client.SMembers(context.TODO(), stopStreamKey(vsu.GuildID)).Result()
-	if err != nil {
-		fmt.Println("Error getting blocked users: " + err.Error())
-		return
-	}
-
-	for _, id := range blockedIds {
-		if id == vsu.UserID {
-			if vsu.SelfStream == true {
-				_, _ = s.ChannelMessageSend("943655307626823771", "Hey <@"+vsu.UserID+">, no stream for you.")
-				moveUserBackAndForward(s, vsu.GuildID, vsu.UserID)
-			}
-
-			return
-		}
-	}
-}
-
-func streamStartHandler(s *discordgo.Session, vsu *discordgo.VoiceStateUpdate) {
-	if vsu.ChannelID == "" {
-		return
-	}
-
-	if vsu.UserID == BotId || vsu.UserID != "176049727945572352" {
-		return
-	}
-
-	_, _ = s.ChannelMessageSend("943655307626823771", "Hey <@"+vsu.UserID+">, no stream for you.")
-	moveUserBackAndForward(s, vsu.GuildID, vsu.UserID)
-}
+// 	_, _ = s.ChannelMessageSend("943655307626823771", "Hey <@"+vsu.UserID+">, no stream for you.")
+// 	moveUserBackAndForward(s, vsu.GuildID, vsu.UserID)
+// }
 
 func subscribeToNameHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == BotId {
@@ -305,66 +161,7 @@ func searchVoiceChannel(session *discordgo.Session, user string) (voiceChannelID
 	return ""
 }
 
-func stopStreamHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.Author.ID != "176049727945572352" {
-		return
-	}
-
-	contents := strings.Split(m.Content, " ")
-
-	if contents[0] != msgWithPrefix("bugoff") {
-		return
-	}
-
-	if len(contents) != 2 {
-		_, _ = s.ChannelMessageSend(m.ChannelID, "Invalid option: should be `!bugoff @user`")
-		return
-	}
-
-	userIdRegex := regexp.MustCompile(`<@!(\d*)>`)
-	matches := userIdRegex.FindStringSubmatch(contents[1])
-	userID := matches[1]
-
-	err := moveUserBackAndForward(s, m.GuildID, userID)
-	if err != nil {
-		_, _ = s.ChannelMessageSend(m.ChannelID, err.Error())
-		return
-	}
-
-	s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
-}
-
-func moveUserBackAndForward(s *discordgo.Session, guildID, userID string) error {
-	// Check if the user is in a voice channel
-	channelID := searchVoiceChannel(s, userID)
-	if channelID == "" {
-		return errors.New("User is not in a voice channel")
-	}
-
-	// Move to a different channel
-	afkChanID := afkChannel
-	err := s.GuildMemberMove(guildID, userID, &afkChanID)
-	if err != nil {
-		fmt.Println(err.Error())
-		return nil
-	}
-
-	// Wait for the user to connect to the AFK channel and move back to the original channel
-	for maxTimes := 1; maxTimes < 10; maxTimes++ {
-		time.Sleep(10 * time.Millisecond)
-
-		err = s.GuildMemberMove(guildID, userID, &channelID)
-		if err == nil {
-			break
-		}
-
-		fmt.Println(err.Error())
-	}
-
-	return nil
-}
-
-//Definition of pingHandler function it takes two arguments first one is discordgo.Session which is s , second one is discordgo.MessageCreate which is m.
+// Definition of pingHandler function it takes two arguments first one is discordgo.Session which is s , second one is discordgo.MessageCreate which is m.
 func pingHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	//Bot musn't reply to it's own messages , to confirm it we perform this check.
 	if m.Author.ID == BotId {
@@ -411,7 +208,7 @@ func notifyBadNameHandler(s *discordgo.Session, gm *discordgo.GuildMemberUpdate)
 		fmt.Println(err.Error())
 	}
 
-	err = moveUserBackAndForward(s, gm.GuildID, gm.User.ID)
+	err = voice_chat.MoveUserBackAndForth(s, gm.GuildID, gm.User.ID, config.DogeGuildConfig.AfkChannelId)
 	if err != nil {
 		fmt.Println(err.Error())
 	}

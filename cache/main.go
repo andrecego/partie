@@ -1,6 +1,8 @@
 package cache
 
 import (
+	"os"
+
 	"github.com/go-redis/redis/v8"
 )
 
@@ -18,7 +20,7 @@ func New() *Cache {
 	}
 
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     "0.0.0.0:6379",
+		Addr:     os.Getenv("REDIS_URL"),
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})

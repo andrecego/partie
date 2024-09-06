@@ -10,15 +10,16 @@ import (
 
 func main() {
 	err := config.ReadConfig()
-	configRollbar()
+	// configRollbar()
 
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
-	rollbar.WrapAndWait(bot.Start)
-	defer rollbar.Close()
+	// rollbar.WrapAndWait(bot.Start)
+	// defer rollbar.Close()
+	bot.Start()
 
 	<-make(chan struct{})
 	return

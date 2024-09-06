@@ -26,3 +26,24 @@ func TestURLToText(t *testing.T) {
 		assert.Equal(t, testCase.expectedText, URLToText(testCase.url), testCase.description)
 	}
 }
+
+func TestPlaylistURLToTexts(t *testing.T) {
+	type testCase struct {
+		description   string
+		url           string
+		expectedTexts []string
+	}
+
+	testCases := []testCase{
+		{
+			description:   "Spotify playlist URL",
+			url:           "https://open.spotify.com/playlist/1rqGgM1fIIiS3nDFUmdk2g",
+			expectedTexts: []string{"2055 - Sleppy Hallow", "Believe Me - Navos", "Money In The Grave - Drake, Rick Ross"},
+		},
+	}
+
+	for _, testCase := range testCases {
+		texts := PlaylistURLToTexts(testCase.url)
+		assert.Equal(t, testCase.expectedTexts, texts, testCase.description)
+	}
+}

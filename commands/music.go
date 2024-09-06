@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"partie-bot/cache"
+	"partie-bot/config"
 	"partie-bot/music"
 	"partie-bot/music/youtube"
 	"partie-bot/repositories"
@@ -14,7 +15,6 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/rollbar/rollbar-go"
 )
 
 var buffer = make([][]byte, 0)
@@ -70,85 +70,84 @@ func getSearchResult(guildID, userID string) ([]repositories.YoutubeSearchResult
 }
 
 func MusicHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
-	rollbar.WrapAndWait(func() {
 
-		// searchResults, err := getSearchResult(m.GuildID, m.Author.ID)
-		// if err != nil {
-		// 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error getting search results: %s", err))
-		// 	return
-		// }
-		if !isCommand(m.Content) {
-			return
-		}
+	// searchResults, err := getSearchResult(m.GuildID, m.Author.ID)
+	// if err != nil {
+	// 	s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Error getting search results: %s", err))
+	// 	return
+	// }
+	if !isCommand(m.Content) {
+		return
+	}
 
-		command, args := parseCommands(m, "music")
-		if command != "music" {
-			return
-		}
+	command, args := parseCommands(m, "music")
+	if command != "music" {
+		return
+	}
 
-		if len(args) == 0 {
-			s.ChannelMessageSend(m.ChannelID, "Usage: !music <play/pause/stop>")
-			return
-		}
+	if len(args) == 0 {
+		s.ChannelMessageSend(m.ChannelID, "Usage: !music <play/pause/stop>")
+		return
+	}
 
-		music.New(s)
+	music.New(s)
 
-		switch args[0] {
-		case "play":
-			query := strings.Join(args[1:], " ")
-			if query != "" {
-				err := addToQueue(s, strings.Join(args[1:], " "), addedBy(m))
-				if err != nil {
-					fmt.Println(err)
-					return
-				}
-			}
-
-			err := music.Stream(s)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-		case "add":
-			s.ChannelMessageSend(m.ChannelID, "Adding music")
+	switch args[0] {
+	case "play":
+		query := strings.Join(args[1:], " ")
+		if query != "" {
 			err := addToQueue(s, strings.Join(args[1:], " "), addedBy(m))
 			if err != nil {
 				fmt.Println(err)
 				return
 			}
-		case "skip":
-			music.Skip()
-		case "search":
-			music.Search(strings.Join(args[1:], " "), m)
-		case "restart":
-			music.Restart(s, m.GuildID, m.Author.ID)
-		case "queue":
-			music.ShowQueue(m.ChannelID)
-		case "stream":
-			err := music.Stream(s)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-
-		case "pause":
-			music.Pause()
-			s.ChannelMessageSend(m.ChannelID, "Pausing music")
-		case "resume":
-			music.Resume()
-			s.ChannelMessageSend(m.ChannelID, "Resuming music")
-		case "stop":
-			s.ChannelMessageSend(m.ChannelID, "Stopping music")
-		case "createPlaylistChannel":
-			s.ChannelMessageSend("955146633203560468", "Creating playlist channel")
-			s.ChannelMessageSend("955146633203560468", "Creating playlist channel")
-		default:
-			s.ChannelMessageSend(m.ChannelID, "Usage: !music <play/pause/stop>")
 		}
-	})
+
+		err := music.Stream(s)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+	case "add":
+		s.ChannelMessageSend(m.ChannelID, "Adding music")
+		err := addToQueue(s, strings.Join(args[1:], " "), addedBy(m))
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+	case "skip":
+		music.Skip()
+	case "search":
+		music.Search(strings.Join(args[1:], " "), m)
+	case "restart":
+		music.Restart(s, m.GuildID, m.Author.ID)
+	case "queue":
+		music.ShowQueue(m.ChannelID)
+	case "stream":
+		err := music.Stream(s)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+	case "pause":
+		music.Pause()
+		s.ChannelMessageSend(m.ChannelID, "Pausing music")
+	case "resume":
+		music.Resume()
+		s.ChannelMessageSend(m.ChannelID, "Resuming music")
+	case "stop":
+		s.ChannelMessageSend(m.ChannelID, "Stopping music")
+	case "createPlaylistChannel":
+		s.ChannelMessageSend(config.DogeGuildConfig.PlaylistChannelId, "Creating playlist channel")
+		s.ChannelMessageSend(config.DogeGuildConfig.PlaylistChannelId, "Creating playlist channel")
+	default:
+		s.ChannelMessageSend(m.ChannelID, "Usage: !music <play/pause/stop>")
+	}
+
 }
 
-func addToQueue(s *discordgo.Session, query string, addedBy youtube.AddedBy) error {
+func addToQueue(_ *discordgo.Session, query string, addedBy youtube.AddedBy) error {
 	if query == "" {
 		return fmt.Errorf("addToQueue: %w", ErrEmptyString)
 	}
@@ -183,12 +182,12 @@ func addToQueue(s *discordgo.Session, query string, addedBy youtube.AddedBy) err
 			fmt.Println("Item: ", i)
 			fmt.Println("Adding song: ", youtubeResult.Entries[i].Title)
 
-			rollbar.SetPerson(addedBy.User.ID, addedBy.User.Username, "")
-			rollbar.Info("Song added", map[string]interface{}{
-				"title":    youtubeResult.Entries[i].Title,
-				"videoURL": youtubeResult.Entries[i].VideoURL,
-			})
-			rollbar.ClearPerson()
+			// rollbar.SetPerson(addedBy.User.ID, addedBy.User.Username, "")
+			// rollbar.Info("Song added", map[string]interface{}{
+			// 	"title":    youtubeResult.Entries[i].Title,
+			// 	"videoURL": youtubeResult.Entries[i].VideoURL,
+			// })
+			// rollbar.ClearPerson()
 
 			youtubeResult.Entries[i].AddedBy = addedBy
 			music.AddAsyncToQueue(&youtubeResult.Entries[i])
@@ -200,60 +199,58 @@ func addToQueue(s *discordgo.Session, query string, addedBy youtube.AddedBy) err
 }
 
 func PlaylistChannelHandler(session *discordgo.Session, message *discordgo.MessageCreate) {
-	rollbar.WrapAndWait(func() {
-		if message.ChannelID != "955146633203560468" { // playlist channel
-			return
-		}
 
-		if message.Author.ID == "985002886087999608" { // partie bot id
-			return
-		}
-
-		go deleteMessage(session, message)
-
-		if isCommand(message.Content) {
-			return
-		}
-
-		music.New(session)
-		if isPrefixlessCommands(message.Content) {
-			command, args := commandParse(message.Content)
-			switch command {
-			case "pause", "play":
-				music.PlayPause()
-			case "skip":
-				music.Skip()
-			case "restart":
-				music.Restart(session, message.GuildID, message.Author.ID)
-			case "remove", "delete":
-				if len(args) == 0 {
-					return
-				}
-
-				queueNumber, err := strconv.Atoi(args[0])
-				if err != nil {
-					fmt.Println("Error converting queue number to int: ", err)
-					return
-				}
-
-				music.Remove(queueNumber)
-			}
-			return
-		}
-
-		musicPlay(session, message, []string{message.Content})
-	})
-}
-
-func PlaylistChannelStartHandler(s *discordgo.Session, guild *discordgo.GuildCreate) {
-
-	dogeID := "176049854001315850"
-	if guild.Guild.ID != dogeID {
+	if message.ChannelID != config.DogeGuildConfig.PlaylistChannelId { // playlist channel
 		return
 	}
 
-	playlistChannelID := "955146633203560468"
-	messages, err := s.ChannelMessages(playlistChannelID, 100, "", "1052568412003520522", "")
+	if message.Author.ID == "985002886087999608" { // partie bot id
+		return
+	}
+
+	go deleteMessage(session, message)
+
+	if isCommand(message.Content) {
+		return
+	}
+
+	music.New(session)
+	if isPrefixlessCommands(message.Content) {
+		command, args := commandParse(message.Content)
+		switch command {
+		case "pause", "play":
+			music.PlayPause()
+		case "skip":
+			music.Skip()
+		case "restart":
+			music.Restart(session, message.GuildID, message.Author.ID)
+		case "remove", "delete":
+			if len(args) == 0 {
+				return
+			}
+
+			queueNumber, err := strconv.Atoi(args[0])
+			if err != nil {
+				fmt.Println("Error converting queue number to int: ", err)
+				return
+			}
+
+			music.Remove(queueNumber)
+		}
+		return
+	}
+
+	musicPlay(session, message, []string{message.Content})
+
+}
+
+func PlaylistChannelStartHandler(s *discordgo.Session, guild *discordgo.GuildCreate) {
+	if guild.Guild.ID != config.DogeGuildConfig.GuildId {
+		return
+	}
+
+	playlistChannelID := config.DogeGuildConfig.PlaylistChannelId
+	messages, err := s.ChannelMessages(playlistChannelID, 100, "", config.DogeGuildConfig.PlaylistMessageImageId, "")
 	if err != nil {
 		fmt.Println("Error getting messages:", err)
 		return
@@ -261,7 +258,7 @@ func PlaylistChannelStartHandler(s *discordgo.Session, guild *discordgo.GuildCre
 
 	for _, message := range messages {
 		fmt.Println(message.Content)
-		if message.ID == "1052568410799755264" || message.ID == "1052568412003520522" {
+		if message.ID == config.DogeGuildConfig.PlaylistMessageImageId || message.ID == config.DogeGuildConfig.PlaylistMessageQueueId {
 			continue
 		}
 
@@ -282,7 +279,7 @@ func deleteMessage(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func AddMusicReactionHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.ChannelID != "955146633203560468" { // playlist channel
+	if m.ChannelID != config.DogeGuildConfig.PlaylistChannelId { // playlist channel
 		return
 	}
 
@@ -300,18 +297,17 @@ func AddMusicReactionHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if args[0] == "changeImage" {
-		_, err := s.ChannelMessageEdit("955146633203560468", "1052568410799755264", "https://preview.redd.it/xg4ke9fjvng41.jpg?width=1024&auto=webp&s=57153c7a8162153d2fd2a02b3d7bdc6085396c9f")
+		_, err := s.ChannelMessageEdit(config.DogeGuildConfig.PlaylistChannelId, config.DogeGuildConfig.PlaylistMessageQueueId, "https://preview.redd.it/xg4ke9fjvng41.jpg?width=1024&auto=webp&s=57153c7a8162153d2fd2a02b3d7bdc6085396c9f")
 		if err != nil {
 			fmt.Println(err)
 		}
-
 	}
 
 	if args[0] != "addReact" {
 		return
 	}
 
-	queueMessageID := "1052568412003520522"
+	queueMessageID := config.DogeGuildConfig.PlaylistMessageImageId
 	s.MessageReactionAdd(m.ChannelID, queueMessageID, "⏯️")
 	s.MessageReactionAdd(m.ChannelID, queueMessageID, "⏹️")
 	s.MessageReactionAdd(m.ChannelID, queueMessageID, "⏭️")
@@ -319,7 +315,7 @@ func AddMusicReactionHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func ReactionControlHandler(s *discordgo.Session, m *discordgo.MessageReactionAdd) {
-	if m.ChannelID != "955146633203560468" { // playlist channel
+	if m.ChannelID != config.DogeGuildConfig.PlaylistChannelId { // playlist channel
 		return
 	}
 
@@ -331,7 +327,7 @@ func ReactionControlHandler(s *discordgo.Session, m *discordgo.MessageReactionAd
 	case "⏯️":
 		music.PlayPause()
 	case "⏹️":
-		// music.Stop()
+		music.Cleanup(s)
 	case "⏭️":
 		music.Skip()
 	case "🔁":
@@ -360,6 +356,6 @@ func DisconnectedHandler(s *discordgo.Session, vsu *discordgo.VoiceStateUpdate) 
 	}
 
 	// call the music cleanup function
-	music.Cleanup()
+	music.Cleanup(s)
 	fmt.Println("Disconnected from server, music cleanup called")
 }

@@ -48,6 +48,8 @@ func New(s *discordgo.Session) *DJ {
 
 	currentDJ = &DJ{
 		NeedsToSkip: false,
+		Queue:       make([]Song, 0),
+		CurrentSong: nil,
 		Discord: &Discord{
 			Session: s,
 		},

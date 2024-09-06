@@ -3,9 +3,18 @@ package config
 import "os"
 
 var (
-	Token        string // To store value of Token from config.json .
-	BotPrefix    string // To store value of BotPrefix from config.json.
-	RollbarToken string
+	Token           string // To store value of Token from config.json .
+	BotPrefix       string // To store value of BotPrefix from config.json.
+	RollbarToken    string
+	BotId           string
+	DogeGuildConfig = GuildConfig{
+		GuildId:                "176049854001315850",
+		Prefix:                 "!",
+		PlaylistChannelId:      "1086983380828176505",
+		PlaylistMessageImageId: "1222897849285742652",
+		PlaylistMessageQueueId: "1222897838493532200",
+		AfkChannelId:           "950007673917698069",
+	}
 )
 
 func ReadConfig() error {
@@ -14,4 +23,13 @@ func ReadConfig() error {
 	BotPrefix = "!"
 
 	return nil
+}
+
+type GuildConfig struct {
+	AfkChannelId           string
+	GuildId                string
+	Prefix                 string
+	PlaylistChannelId      string
+	PlaylistMessageImageId string
+	PlaylistMessageQueueId string
 }

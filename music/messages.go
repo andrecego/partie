@@ -3,6 +3,7 @@ package music
 import (
 	"errors"
 	"fmt"
+	"partie-bot/config"
 	"reflect"
 	"time"
 
@@ -10,6 +11,8 @@ import (
 )
 
 const maxQueuePrintSize = 20
+
+const oneDotLeaderCharacter = "․" // U+2024 needed because Discord doesn't support decreasing order list
 
 func nowPlayingMessage() {
 	channelID := "943655307626823771"
@@ -50,9 +53,8 @@ func getMessage() (string, *discordgo.MessageEmbed) {
 		}
 		ReverseSlice(printedQueue)
 		for i, song := range printedQueue {
-			queueMessage += fmt.Sprintf("%02d. %s\n", queueSize-i, formatSong(song))
+			queueMessage += fmt.Sprintf("%02d%s %s\n", queueSize-i, oneDotLeaderCharacter, formatSong(song))
 		}
-
 	} else {
 		queueMessage += "No songs in queue. Go add some! 🎵"
 	}
@@ -72,7 +74,7 @@ func queueMessage(channelID string) {
 
 func addedToQueueMessage(song Song) {
 	channelID := song.GetChannelID()
-	if channelID == "955146633203560468" { // playlist channel id
+	if channelID == config.DogeGuildConfig.PlaylistChannelId { // playlist channel id
 		return
 	}
 
@@ -138,8 +140,8 @@ func ReverseSlice(data interface{}) {
 }
 
 func updateQueueMessage() {
-	messageID := "1052568412003520522"
-	channelID := "955146633203560468"
+	messageID := config.DogeGuildConfig.PlaylistMessageImageId
+	channelID := config.DogeGuildConfig.PlaylistChannelId
 
 	content, embed := getMessage()
 

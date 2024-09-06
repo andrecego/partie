@@ -1,6 +1,10 @@
 package music
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/bwmarrin/discordgo"
+)
 
 func ShowQueue(channelID string) {
 	queueMessage(channelID)
@@ -34,8 +38,9 @@ func Resume() {
 	currentDJ.Paused = false
 }
 
-func Cleanup() {
+func Cleanup(session *discordgo.Session) {
 	currentDJ = nil
+	New(session)
 }
 
 func AddAsyncToQueue(song Song) {

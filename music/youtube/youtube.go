@@ -17,7 +17,7 @@ type YoutubeResult struct {
 type Youtube struct {
 	ID         string             `json:"id"`
 	Title      string             `json:"title"`
-	Duration   int                `json:"duration"`
+	Duration   float32            `json:"duration"`
 	VideoURL   string             `json:"webpage_url"`
 	URL        string             `json:"url"`
 	Thumbnail  string             `json:"thumbnail"`
@@ -83,6 +83,7 @@ func (y *Youtube) GetURL() string {
 			return ""
 		}
 
+		y.VideoURL = y.URL
 		y.URL = strings.TrimSpace(stdout)
 	}
 
