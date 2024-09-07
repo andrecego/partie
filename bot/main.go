@@ -82,7 +82,7 @@ func Start() {
 }
 
 func msgWithPrefix(name string) string {
-	return config.BotPrefix + name
+	return config.DogeGuildConfig.Prefix + name
 }
 
 // func isStreamingHandler(s *discordgo.Session, m *discordgo.MessageCreate) {

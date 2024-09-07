@@ -8,6 +8,7 @@ import (
 	"partie-bot/helpers"
 	"partie-bot/voice_chat"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -28,19 +29,18 @@ func AddStreamBlockCommands(goBot *discordgo.Session) {
 }
 
 func addBlockedUserStreamHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
-	contents := strings.Split(m.Content, " ")
-
-	if contents[0] != helpers.MsgWithPrefix("blockstream") {
+	command, args := helpers.ParseCommand(m.Content, config.DogeGuildConfig)
+	if command != "blockstream" {
 		return
 	}
 
-	if len(contents) != 2 {
+	if len(args) != 1 {
 		_, _ = s.ChannelMessageSend(m.ChannelID, "Invalid option: should be `!blockstream @user`")
 		return
 	}
 
 	userIdRegex := regexp.MustCompile(`<@(\d*)>`)
-	matches := userIdRegex.FindStringSubmatch(contents[1])
+	matches := userIdRegex.FindStringSubmatch(args[0])
 	if len(matches) < 2 {
 		_, _ = s.ChannelMessageSend(m.ChannelID, "Invalid user format")
 		return
@@ -54,12 +54,13 @@ func addBlockedUserStreamHandler(s *discordgo.Session, m *discordgo.MessageCreat
 	}
 
 	vsu, err := s.State.VoiceState(m.GuildID, userID)
-	if err != nil {
+	if err != nil && err != discordgo.ErrStateNotFound {
 		_, _ = s.ChannelMessageSend(m.ChannelID, "Error getting voice state: "+err.Error())
 		return
 	}
-
-	blockStreamHandler(s, &discordgo.VoiceStateUpdate{VoiceState: vsu})
+	if err != discordgo.ErrStateNotFound {
+		blockStreamHandler(s, &discordgo.VoiceStateUpdate{VoiceState: vsu})
+	}
 
 	s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 }
@@ -67,7 +68,7 @@ func addBlockedUserStreamHandler(s *discordgo.Session, m *discordgo.MessageCreat
 func addBlockedUserVideoHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	contents := strings.Split(m.Content, " ")
 
-	if contents[0] != helpers.MsgWithPrefix("blockvideo") {
+	if contents[0] != helpers.MsgWithPrefix("blockvideo", config.DogeGuildConfig) {
 		return
 	}
 
@@ -103,7 +104,7 @@ func addBlockedUserVideoHandler(s *discordgo.Session, m *discordgo.MessageCreate
 func removeBlockedUserStreamHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	contents := strings.Split(m.Content, " ")
 
-	if contents[0] != helpers.MsgWithPrefix("rmBlockedStream") {
+	if contents[0] != helpers.MsgWithPrefix("rmBlockedStream", config.DogeGuildConfig) {
 		return
 	}
 
@@ -132,7 +133,7 @@ func removeBlockedUserStreamHandler(s *discordgo.Session, m *discordgo.MessageCr
 func removeBlockedUserVideoHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	contents := strings.Split(m.Content, " ")
 
-	if contents[0] != helpers.MsgWithPrefix("rmBlockedVideo") {
+	if contents[0] != helpers.MsgWithPrefix("rmBlockedVideo", config.DogeGuildConfig) {
 		return
 	}
 
@@ -159,7 +160,7 @@ func removeBlockedUserVideoHandler(s *discordgo.Session, m *discordgo.MessageCre
 }
 
 func listBlockedUserStreamHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.Content != helpers.MsgWithPrefix("listBlockedStream") {
+	if m.Content != helpers.MsgWithPrefix("listBlockedStream", config.DogeGuildConfig) {
 		return
 	}
 
@@ -183,7 +184,7 @@ func listBlockedUserStreamHandler(s *discordgo.Session, m *discordgo.MessageCrea
 }
 
 func listBlockedUserVideoHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.Content != helpers.MsgWithPrefix("listBlockedVideo") {
+	if m.Content != helpers.MsgWithPrefix("listBlockedVideo", config.DogeGuildConfig) {
 		return
 	}
 
@@ -207,9 +208,19 @@ func listBlockedUserVideoHandler(s *discordgo.Session, m *discordgo.MessageCreat
 }
 
 func blockStreamHandler(s *discordgo.Session, vsu *discordgo.VoiceStateUpdate) {
-	if vsu.UserID == config.BotId || vsu.ChannelID == config.DogeGuildConfig.AfkChannelId {
+	if vsu.UserID == config.BotId {
 		return
 	}
+
+	if vsu.SelfStream == false {
+		return
+	}
+
+	fmt.Println("Checking if user is blocked, vsu.BeforeUpdate: ", vsu.BeforeUpdate,
+		" vsu.SelfStream: ", vsu.SelfStream,
+		" vsu.UserID: ", vsu.UserID,
+		" vsu.SessionID: ", vsu.SessionID,
+	)
 
 	blockedIds, err := cache.New().Client.SMembers(context.TODO(), stopStreamKey(vsu.GuildID)).Result()
 	if err != nil {
@@ -217,15 +228,11 @@ func blockStreamHandler(s *discordgo.Session, vsu *discordgo.VoiceStateUpdate) {
 		return
 	}
 
-	for _, id := range blockedIds {
-		if id == vsu.UserID {
-			if vsu.SelfStream == true {
-				_, _ = s.ChannelMessageSend("943655307626823771", "Hey <@"+vsu.UserID+">, no stream for you.")
-				voice_chat.MoveUserBackAndForth(s, vsu.GuildID, vsu.UserID, config.DogeGuildConfig.AfkChannelId)
-			}
-
-			return
-		}
+	// check if blockedIds contains the user id
+	blockedUser := slices.Contains(blockedIds, vsu.UserID)
+	if blockedUser {
+		_, _ = s.ChannelMessageSend("943655307626823771", "Hey <@"+vsu.UserID+">, no stream for you.")
+		voice_chat.MoveUserBackAndForth(s, vsu.GuildID, vsu.UserID, config.DogeGuildConfig.AfkChannelId)
 	}
 }
 
@@ -259,7 +266,7 @@ func stopStreamHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	contents := strings.Split(m.Content, " ")
 
-	if contents[0] != helpers.MsgWithPrefix("stopstream") {
+	if contents[0] != helpers.MsgWithPrefix("stopstream", config.DogeGuildConfig) {
 		return
 	}
 
@@ -292,7 +299,7 @@ func stopVideoHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	contents := strings.Split(m.Content, " ")
 
-	if contents[0] != helpers.MsgWithPrefix("stopvideo") {
+	if contents[0] != helpers.MsgWithPrefix("stopvideo", config.DogeGuildConfig) {
 		return
 	}
 
