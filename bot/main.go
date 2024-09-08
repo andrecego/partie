@@ -38,13 +38,13 @@ type VoiceStatusUpdate struct {
 func Start() {
 
 	//creating new bot session
-	goBot, err := discordgo.New("Bot " + config.Token)
+	discordSession, err := discordgo.New("Bot " + config.Token)
 	if err != nil {
 		panic(err)
 	}
 
 	// Making our bot a user using User function .
-	u, err := goBot.User("@me")
+	u, err := discordSession.User("@me")
 	//Handlinf error
 	if err != nil {
 		fmt.Println("Error obtaining account details,", err)
@@ -54,32 +54,35 @@ func Start() {
 	config.BotId = u.ID
 
 	// TODO: Improve intents to only the necessary ones
-	goBot.Identify.Intents = discordgo.IntentsAll
+	discordSession.Identify.Intents = discordgo.IntentsAll
 
 	// Adding handler function to handle our messages using AddHandler from discordgo package. We will declare messageHandler function later.
 	// goBot.AddHandler(notifyBadNameHandler) // roles ok, but not moving back to channel
 	// goBot.AddHandler(allEventsHandler)
-	goBot.AddHandler(pingHandler)
-	goBot.AddHandler(subscribeToNameHandler)
-	commands.AddStreamBlockCommands(goBot)
-	goBot.AddHandler(commands.RollD20Handler)
-	goBot.AddHandler(commands.MusicHandler)
-	goBot.AddHandler(commands.PlaylistChannelHandler)
-	goBot.AddHandler(commands.PlaylistChannelStartHandler)
-	goBot.AddHandler(commands.AddMusicReactionHandler)
-	goBot.AddHandler(commands.ReactionControlHandler)
-	goBot.AddHandler(commands.DisconnectedHandler)
+	discordSession.AddHandler(pingHandler)
+	discordSession.AddHandler(subscribeToNameHandler)
+	commands.AddStreamBlockCommands(discordSession)
+	discordSession.AddHandler(commands.RollD20Handler)
+	discordSession.AddHandler(commands.MusicHandler)
+	discordSession.AddHandler(commands.PlaylistChannelHandler)
+	discordSession.AddHandler(commands.PlaylistChannelStartHandler)
+	discordSession.AddHandler(commands.AddMusicReactionHandler)
+	discordSession.AddHandler(commands.ReactionControlHandler)
+	discordSession.AddHandler(commands.DisconnectedHandler)
 	// goBot.AddHandler(streamStartHandler) // infinite looping
 
-	err = goBot.Open()
+	discordSession.ShouldReconnectOnError = true
+	discordSession.ShouldReconnectVoiceOnSessionError = true
+
+	err = discordSession.Open()
 	//Error handling
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Println("Error opening connection: ", err)
 		return
 	}
 
 	// Ideally we should loop through all the guilds
-	music.New(goBot, config.DogeGuildConfig.GuildId)
+	music.New(discordSession, config.DogeGuildConfig.GuildId)
 
 	//If every thing works fine we will be printing this.
 	fmt.Println("Bot is running !")
