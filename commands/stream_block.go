@@ -216,19 +216,12 @@ func blockStreamHandler(s *discordgo.Session, vsu *discordgo.VoiceStateUpdate) {
 		return
 	}
 
-	fmt.Println("Checking if user is blocked, vsu.BeforeUpdate: ", vsu.BeforeUpdate,
-		" vsu.SelfStream: ", vsu.SelfStream,
-		" vsu.UserID: ", vsu.UserID,
-		" vsu.SessionID: ", vsu.SessionID,
-	)
-
 	blockedIds, err := cache.New().Client.SMembers(context.TODO(), stopStreamKey(vsu.GuildID)).Result()
 	if err != nil {
 		fmt.Println("Error getting blocked users: " + err.Error())
 		return
 	}
 
-	// check if blockedIds contains the user id
 	blockedUser := slices.Contains(blockedIds, vsu.UserID)
 	if blockedUser {
 		_, _ = s.ChannelMessageSend("943655307626823771", "Hey <@"+vsu.UserID+">, no stream for you.")

@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"partie-bot/commands"
 	"partie-bot/config" //importing our config package which we have created above
+	"partie-bot/music"
 	"partie-bot/voice_chat"
 	"strings"
 	"time"
@@ -76,6 +77,9 @@ func Start() {
 		fmt.Println(err.Error())
 		return
 	}
+
+	// Ideally we should loop through all the guilds
+	music.New(goBot, config.DogeGuildConfig.GuildId)
 
 	//If every thing works fine we will be printing this.
 	fmt.Println("Bot is running !")
