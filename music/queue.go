@@ -1,7 +1,10 @@
 package music
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
+	"partie-bot/cache"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -38,19 +41,48 @@ func Resume() {
 	currentDJ.Paused = false
 }
 
-func Cleanup(session *discordgo.Session) {
+func Cleanup(session *discordgo.Session, guildID string) {
 	currentDJ = nil
-	New(session)
+	New(session, guildID)
 }
 
 func AddAsyncToQueue(song Song) {
-	currentDJ.Queue = append(currentDJ.Queue, song)
+	addToQueue(song)
 }
 
 func AddToQueue(song Song) {
-	currentDJ.Queue = append(currentDJ.Queue, song)
+	addToQueue(song)
 	updateQueueMessage()
 	addedToQueueMessage(song)
+}
+
+func addToQueue(song Song) {
+	currentDJ.Queue = append(currentDJ.Queue, song)
+	updateQueueCache()
+}
+
+func updateQueueCache() {
+	if len(currentDJ.Queue) == 0 {
+		fmt.Println("Skipping queue update, no songs in queue")
+		return
+	}
+
+	redisClient := cache.New().Client
+	key := fmt.Sprintf("guilds:%s:queue", currentDJ.Queue[0].GetGuildID())
+	allSongs := currentDJ.Queue
+	if currentDJ.CurrentSong != nil {
+		allSongs = append([]Song{currentDJ.CurrentSong}, allSongs...)
+	}
+	allSongsBytes, err := json.Marshal(allSongs)
+	if err != nil {
+		fmt.Println("Error marshalling queue: ", err)
+		return
+	}
+
+	err = redisClient.Set(context.TODO(), key, allSongsBytes, 0).Err()
+	if err != nil {
+		fmt.Println("Error saving queue: ", err)
+	}
 }
 
 func UpdateQueueMessage() {
@@ -65,6 +97,7 @@ func Remove(queueNumber int) {
 	}
 
 	currentDJ.Queue = append(currentDJ.Queue[:index], currentDJ.Queue[index+1:]...)
+	updateQueueCache()
 	updateQueueMessage()
 }
 
@@ -72,6 +105,7 @@ func NextSong() Song {
 	nextSong := fetchNextSong()
 	fmt.Println("Next song...")
 
+	go updateQueueCache()
 	go updateQueueMessage()
 	return nextSong
 }

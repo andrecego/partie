@@ -34,6 +34,16 @@ func TextParse(query string) interfaces.Finder {
 	return textFinder{Query: query}
 }
 
+func TextParseSlice(queries []string) []interfaces.Finder {
+	var finders []interfaces.Finder
+
+	for i := range queries {
+		finders = append(finders, TextParse(queries[i]))
+	}
+
+	return finders
+}
+
 func textDownloadCommand(query string) string {
 	dlArgs := append(youtubeDefaultArgs, fmt.Sprintf(`"ytsearch:%s"`, query))
 

@@ -1,6 +1,11 @@
 package music
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"partie-bot/cache"
+	"partie-bot/music/youtube"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -41,14 +46,35 @@ var (
 	timesToDisconnect = 60 * 5
 )
 
-func New(s *discordgo.Session) *DJ {
+func New(s *discordgo.Session, guildID string) *DJ {
 	if currentDJ != nil {
 		return currentDJ
 	}
 
+	redisClient := cache.New().Client
+	key := "guilds:" + guildID + ":queue"
+	allSongsBytes, err := redisClient.Get(context.TODO(), key).Bytes()
+	if err != nil {
+		fmt.Println("Error getting queue from cache:", err)
+	}
+
+	var allYoutubeSongs []youtube.Youtube
+	if allSongsBytes != nil {
+		err = json.Unmarshal(allSongsBytes, &allYoutubeSongs)
+		if err != nil {
+			fmt.Println("allSongstext:", string(allSongsBytes))
+			fmt.Println("Error unmarshalling queue:", err)
+		}
+	}
+
+	var allSongs []Song
+	for _, song := range allYoutubeSongs {
+		allSongs = append(allSongs, &song)
+	}
+
 	currentDJ = &DJ{
 		NeedsToSkip: false,
-		Queue:       make([]Song, 0),
+		Queue:       allSongs,
 		CurrentSong: nil,
 		Discord: &Discord{
 			Session: s,

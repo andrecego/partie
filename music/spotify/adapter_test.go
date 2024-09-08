@@ -37,8 +37,8 @@ func TestPlaylistURLToTexts(t *testing.T) {
 	testCases := []testCase{
 		{
 			description:   "Spotify playlist URL",
-			url:           "https://open.spotify.com/playlist/1rqGgM1fIIiS3nDFUmdk2g",
-			expectedTexts: []string{"2055 - Sleppy Hallow", "Believe Me - Navos", "Money In The Grave - Drake, Rick Ross"},
+			url:           "1rqGgM1fIIiS3nDFUmdk2g",
+			expectedTexts: []string{"2055 - Sleepy Hallow", "Believe Me - Navos", "Money In The Grave (Drake ft. Rick Ross) - Drake, Rick Ross"},
 		},
 	}
 

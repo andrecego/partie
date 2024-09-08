@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"partie-bot/cache"
 	"partie-bot/config"
+	"partie-bot/interfaces"
 	"partie-bot/music"
 	"partie-bot/music/youtube"
 	"partie-bot/repositories"
@@ -90,7 +91,7 @@ func MusicHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	music.New(s)
+	music.New(s, m.GuildID)
 
 	switch args[0] {
 	case "play":
@@ -155,51 +156,67 @@ func addToQueue(_ *discordgo.Session, query string, addedBy youtube.AddedBy) err
 	queries := strings.Split(query, "\n")
 
 	for i := range queries {
-		finder := music.ParseQuery(queries[i])
-
-		jsonInfo, err := finder.Download()
-		if err != nil {
-			return fmt.Errorf("Error downloading video: %s", err)
+		finders := music.ParseQuery(queries[i])
+		if len(finders) == 0 {
+			return fmt.Errorf("no results found")
 		}
 
-		var youtubeResult youtube.YoutubeResult
-		err = json.Unmarshal([]byte(jsonInfo), &youtubeResult)
-		if err != nil {
-			return fmt.Errorf("Error unmarshalling info file: %s", err)
+		results := make(chan error)
+		for _, finder := range finders {
+			go func(finder interfaces.Finder) {
+				err := addMusicFromFinder(finder, addedBy)
+				results <- err
+			}(finder)
 		}
 
-		if len(youtubeResult.Entries) == 0 {
-			var youtubeEntry youtube.Youtube
-			err = json.Unmarshal([]byte(jsonInfo), &youtubeEntry)
+		for range finders {
+			err := <-results
 			if err != nil {
-				return fmt.Errorf("Error unmarshalling info file: %s", err)
+				fmt.Println("Error adding to queue: ", err)
+				return err
 			}
-
-			youtubeResult.Entries = append(youtubeResult.Entries, youtubeEntry)
 		}
 
-		for i := range youtubeResult.Entries {
-			fmt.Println("Item: ", i)
-			fmt.Println("Adding song: ", youtubeResult.Entries[i].Title)
-
-			// rollbar.SetPerson(addedBy.User.ID, addedBy.User.Username, "")
-			// rollbar.Info("Song added", map[string]interface{}{
-			// 	"title":    youtubeResult.Entries[i].Title,
-			// 	"videoURL": youtubeResult.Entries[i].VideoURL,
-			// })
-			// rollbar.ClearPerson()
-
-			youtubeResult.Entries[i].AddedBy = addedBy
-			music.AddAsyncToQueue(&youtubeResult.Entries[i])
-		}
 		music.UpdateQueueMessage()
 	}
 
 	return nil
 }
 
-func PlaylistChannelHandler(session *discordgo.Session, message *discordgo.MessageCreate) {
+func addMusicFromFinder(finder interfaces.Finder, addedBy youtube.AddedBy) error {
+	jsonInfo, err := finder.Download()
+	if err != nil {
+		return fmt.Errorf("Error downloading video: %s", err)
+	}
 
+	var youtubeResult youtube.YoutubeResult
+	err = json.Unmarshal([]byte(jsonInfo), &youtubeResult)
+	if err != nil {
+		return fmt.Errorf("Error unmarshalling info file: %s", err)
+	}
+
+	if len(youtubeResult.Entries) == 0 {
+		var youtubeEntry youtube.Youtube
+		err = json.Unmarshal([]byte(jsonInfo), &youtubeEntry)
+		if err != nil {
+			return fmt.Errorf("Error unmarshalling info file: %s", err)
+		}
+
+		youtubeResult.Entries = append(youtubeResult.Entries, youtubeEntry)
+	}
+
+	for i := range youtubeResult.Entries {
+		fmt.Println("Item: ", i)
+		fmt.Println("Adding song: ", youtubeResult.Entries[i].Title)
+
+		youtubeResult.Entries[i].AddedBy = addedBy
+		music.AddAsyncToQueue(&youtubeResult.Entries[i])
+	}
+
+	return nil
+}
+
+func PlaylistChannelHandler(session *discordgo.Session, message *discordgo.MessageCreate) {
 	if message.ChannelID != config.DogeGuildConfig.PlaylistChannelId { // playlist channel
 		return
 	}
@@ -214,7 +231,7 @@ func PlaylistChannelHandler(session *discordgo.Session, message *discordgo.Messa
 		return
 	}
 
-	music.New(session)
+	music.New(session, message.GuildID)
 	if isPrefixlessCommands(message.Content) {
 		command, args := commandParse(message.Content)
 		switch command {
@@ -327,7 +344,7 @@ func ReactionControlHandler(s *discordgo.Session, m *discordgo.MessageReactionAd
 	case "⏯️":
 		music.PlayPause()
 	case "⏹️":
-		music.Cleanup(s)
+		music.Cleanup(s, m.GuildID)
 	case "⏭️":
 		music.Skip()
 	case "🔁":
@@ -356,6 +373,6 @@ func DisconnectedHandler(s *discordgo.Session, vsu *discordgo.VoiceStateUpdate) 
 	}
 
 	// call the music cleanup function
-	music.Cleanup(s)
+	music.Cleanup(s, vsu.GuildID)
 	fmt.Println("Disconnected from server, music cleanup called")
 }

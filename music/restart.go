@@ -12,7 +12,7 @@ func Restart(session *discordgo.Session, guildID, userID string) {
 	oldQueue := append([]Song{currentDJ.CurrentSong}, currentDJ.Queue...)
 
 	currentDJ = nil
-	New(session)
+	New(session, guildID)
 
 	currentDJ.Queue = oldQueue
 	currentDJ.Paused = false

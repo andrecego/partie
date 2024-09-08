@@ -6,6 +6,7 @@ var (
 	Token           string // To store value of Token from config.json .
 	RollbarToken    string
 	BotId           string
+	SpotifyBearer   string // spotify bearer token consists of client_id:client_secret base64 encoded.
 	DogeGuildConfig = GuildConfig{
 		GuildId:                "176049854001315850",
 		Prefix:                 "!",
@@ -19,6 +20,7 @@ var (
 func ReadConfig() error {
 	Token = os.Getenv("TOKEN")
 	RollbarToken = os.Getenv("ROLLBAR_TOKEN")
+	SpotifyBearer = os.Getenv("SPOTIFY_BEARER")
 
 	return nil
 }

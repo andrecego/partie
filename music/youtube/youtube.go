@@ -22,8 +22,8 @@ type Youtube struct {
 	URL        string             `json:"url"`
 	Thumbnail  string             `json:"thumbnail"`
 	Thumbnails []YoutubeThumbnail `json:"thumbnails"`
-	StartTime  int
-	AddedBy    AddedBy
+	StartTime  int                `json:"start_time"`
+	AddedBy    AddedBy            `json:"added_by"`
 }
 
 type AddedBy struct {
@@ -92,6 +92,10 @@ func (y *Youtube) GetURL() string {
 
 func (y *Youtube) GetThumbnail() string {
 	if y.Thumbnail == "" {
+		if len(y.Thumbnails) == 0 {
+			return ""
+		}
+
 		return y.Thumbnails[len(y.Thumbnails)-1].URL
 	}
 

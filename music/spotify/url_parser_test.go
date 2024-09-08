@@ -23,3 +23,12 @@ func TestMatchTrack(t *testing.T) {
 	assert.False(t, MatchTrack("https://open.spotify.com/something"))
 	assert.False(t, MatchTrack("open.spotify.com"))
 }
+
+func TestPlaylistIdCapture(t *testing.T) {
+	assert.Equal(t, "1rqGgM1fIIiS3nDFUmdk2g", PlaylistIdCapture("https://open.spotify.com/playlist/1rqGgM1fIIiS3nDFUmdk2g"))
+	assert.Equal(t, "1rqGgM1fIIiS3nDFUmdk2g", PlaylistIdCapture("https://open.spotify.com/playlist/1rqGgM1fIIiS3nDFUmdk2g?si=1817bbe6fa7f4c7b"))
+	assert.Equal(t, "1rqGgM1fIIiS3nDFUmdk2g", PlaylistIdCapture("open.spotify.com/playlist/1rqGgM1fIIiS3nDFUmdk2g"))
+	assert.Equal(t, "", PlaylistIdCapture("https://open.spotify.com/track/2LEF1A8DOZ9wRYikWgVlZ8"))
+	assert.Equal(t, "", PlaylistIdCapture("https://open.spotify.com/something"))
+	assert.Equal(t, "", PlaylistIdCapture("open.spotify.com"))
+}
