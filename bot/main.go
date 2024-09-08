@@ -92,48 +92,11 @@ func msgWithPrefix(name string) string {
 	return config.DogeGuildConfig.Prefix + name
 }
 
-// func isStreamingHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
-// 	contents := strings.Split(m.Content, " ")
-
-// 	if contents[0] != msgWithPrefix("streaming?") {
-// 		return
-// 	}
-
-// 	if len(contents) != 2 {
-// 		_, _ = s.ChannelMessageSend(m.ChannelID, "Invalid option: should be `!streaming? @user`")
-// 		return
-// 	}
-
-// 	userIdRegex := regexp.MustCompile(`<@(\d*)>`)
-// 	matches := userIdRegex.FindStringSubmatch(contents[1])
-// 	userID := matches[1]
-
-// 	vsu, err := s.State.VoiceState(m.GuildID, userID)
-// 	if err != nil {
-// 		_, _ = s.ChannelMessageSend(m.ChannelID, "Error getting voice state: "+err.Error())
-// 		return
-// 	}
-
-// 	_, _ = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("The user is streaming? %v", vsu.SelfStream))
-// }
 
 func allEventsHandler(_ *discordgo.Session, e *discordgo.Event) {
 	fmt.Println()
 	fmt.Println(e.Type, " - ", string(e.RawData))
 }
-
-// func streamStartHandler(s *discordgo.Session, vsu *discordgo.VoiceStateUpdate) {
-// 	if vsu.ChannelID == "" {
-// 		return
-// 	}
-
-// 	if vsu.UserID == BotId || vsu.UserID != "176049727945572352" {
-// 		return
-// 	}
-
-// 	_, _ = s.ChannelMessageSend("943655307626823771", "Hey <@"+vsu.UserID+">, no stream for you.")
-// 	moveUserBackAndForward(s, vsu.GuildID, vsu.UserID)
-// }
 
 func subscribeToNameHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == BotId {
