@@ -55,11 +55,7 @@ func Stream(session *discordgo.Session) error {
 				continue
 			}
 
-			if err == io.EOF || err == io.ErrUnexpectedEOF {
-				if err == io.ErrUnexpectedEOF {
-					fmt.Printf("Skipping song `%v` due to unexpected EOF", currentSong.GetTitle())
-				}
-
+			if err == io.EOF {
 				currentDJ.CurrentSong = nil
 				Stream(session)
 				return nil
@@ -89,6 +85,7 @@ func Stream(session *discordgo.Session) error {
 			}
 
 			if currentDJ.NeedsToSkip {
+				streamSession.Finished()
 				currentDJ.NeedsToSkip = false
 				currentDJ.CurrentSong = nil
 				encodingSession.Cleanup()

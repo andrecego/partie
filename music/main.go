@@ -9,12 +9,14 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/go-redis/redis/v8"
 )
 
 type DJ struct {
 	CurrentSong Song
 	Queue       []Song
 	Discord     *Discord
+	GuildID     string
 	Volume      float64
 	Paused      bool
 	NeedsToSkip bool
@@ -54,7 +56,7 @@ func New(s *discordgo.Session, guildID string) *DJ {
 	redisClient := cache.New().Client
 	key := "guilds:" + guildID + ":queue"
 	allSongsBytes, err := redisClient.Get(context.TODO(), key).Bytes()
-	if err != nil {
+	if err != nil && err != redis.Nil {
 		fmt.Println("Error getting queue from cache:", err)
 	}
 
@@ -75,6 +77,7 @@ func New(s *discordgo.Session, guildID string) *DJ {
 	currentDJ = &DJ{
 		NeedsToSkip: false,
 		Queue:       allSongs,
+		GuildID:     guildID,
 		CurrentSong: nil,
 		Discord: &Discord{
 			Session: s,

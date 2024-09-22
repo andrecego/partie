@@ -1,7 +1,6 @@
 package youtube
 
 import (
-	"fmt"
 	"partie-bot/interfaces"
 	"partie-bot/system"
 	"strings"
@@ -18,9 +17,7 @@ func (y urlFinder) GetQuery() string {
 func (y urlFinder) Download() (string, error) {
 	err, stdout, stderr := system.ShellOut(urlDownloadCommand(y.Query))
 	if err != nil {
-		fmt.Println("Error downloading youtube from URL: ", err)
-		fmt.Println(stderr)
-		return "", err
+		return y.handleYoutubeDLPError(err, stdout, stderr)
 	}
 
 	return strings.TrimSpace(stdout), nil

@@ -6,13 +6,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMatchYoutube(t *testing.T) {
-	assert.True(t, MatchURL("https://www.youtube.com/watch?v=dQw4w9WgXcQ"))
-	assert.True(t, MatchURL("youtube.com/watch?v=dQw4w9WgXcQ"))
-	assert.True(t, MatchURL("https://youtu.be/_dWp3ZbP_DA"))
-	assert.True(t, MatchURL("youtu.be/_dWp3ZbP_DA"))
-	assert.False(t, MatchURL("youtube"))
-	assert.False(t, MatchURL("youtu.be"))
+func TestMatchYoutubeBaseURL(t *testing.T) {
+	assert.True(t, MatchBaseURL("https://www.youtube.com/watch?v=dQw4w9WgXcQ"))
+	assert.True(t, MatchBaseURL("youtube.com/watch?v=dQw4w9WgXcQ"))
+	assert.True(t, MatchBaseURL("https://youtu.be/_dWp3ZbP_DA"))
+	assert.True(t, MatchBaseURL("youtu.be/_dWp3ZbP_DA"))
+	assert.False(t, MatchBaseURL("youtube"))
+	assert.False(t, MatchBaseURL("youtu.be"))
+}
+
+func TestCaptureVideoId(t *testing.T) {
+	assert.Equal(t, "dQw4w9WgXcQ", CaptureVideoId("https://www.youtube.com/watch?v=dQw4w9WgXcQ"))
+	assert.Equal(t, "dQw4w9WgXcQ", CaptureVideoId("youtube.com/watch?v=dQw4w9WgXcQ"))
+	assert.Equal(t, "_dWp3ZbP_DA", CaptureVideoId("https://youtu.be/_dWp3ZbP_DA"))
+	assert.Equal(t, "_dWp3ZbP_DA", CaptureVideoId("youtu.be/_dWp3ZbP_DA"))
 }
 
 func TestYoutubePlaylist(t *testing.T) {

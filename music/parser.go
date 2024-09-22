@@ -22,7 +22,7 @@ func ParseQuery(query string) []interfaces.Finder {
 }
 
 func parseYoutubeQuery(query string) []interfaces.Finder {
-	if !youtube.MatchURL(query) {
+	if !youtube.MatchBaseURL(query) {
 		return nil
 	}
 
@@ -30,7 +30,7 @@ func parseYoutubeQuery(query string) []interfaces.Finder {
 		return []interfaces.Finder{youtube.PlaylistParse(query)}
 	}
 
-	return []interfaces.Finder{youtube.TextParse(query)}
+	return []interfaces.Finder{youtube.URLParse(query)}
 }
 
 func parseSpotifyQuery(query string) []interfaces.Finder {
@@ -39,7 +39,8 @@ func parseSpotifyQuery(query string) []interfaces.Finder {
 	}
 
 	if spotify.MatchTrack(query) {
-		return []interfaces.Finder{youtube.TextParse(query)}
+		spotifyTitle := spotify.URLToText(query)
+		return []interfaces.Finder{youtube.TextParse(spotifyTitle)}
 	}
 
 	if spotify.MatchPlaylist(query) {

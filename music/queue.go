@@ -42,7 +42,11 @@ func Resume() {
 }
 
 func Cleanup(session *discordgo.Session, guildID string) {
+	currentDJ.CurrentSong = nil
+	currentDJ.Queue = nil
+	updateQueueCache()
 	currentDJ = nil
+
 	New(session, guildID)
 }
 
@@ -62,17 +66,21 @@ func addToQueue(song Song) {
 }
 
 func updateQueueCache() {
-	if len(currentDJ.Queue) == 0 {
-		fmt.Println("Skipping queue update, no songs in queue")
-		return
-	}
-
 	redisClient := cache.New().Client
-	key := fmt.Sprintf("guilds:%s:queue", currentDJ.Queue[0].GetGuildID())
+	key := fmt.Sprintf("guilds:%s:queue", currentDJ.GuildID)
 	allSongs := currentDJ.Queue
 	if currentDJ.CurrentSong != nil {
 		allSongs = append([]Song{currentDJ.CurrentSong}, allSongs...)
 	}
+
+	if len(allSongs) == 0 {
+		err := redisClient.Del(context.TODO(), key).Err()
+		if err != nil {
+			fmt.Println("Error deleting queue: ", err)
+		}
+		return
+	}
+
 	allSongsBytes, err := json.Marshal(allSongs)
 	if err != nil {
 		fmt.Println("Error marshalling queue: ", err)
@@ -103,7 +111,9 @@ func Remove(queueNumber int) {
 
 func NextSong() Song {
 	nextSong := fetchNextSong()
-	fmt.Println("Next song...")
+	if nextSong != nil {
+		fmt.Println("Next song: ", nextSong.GetTitle())
+	}
 
 	go updateQueueCache()
 	go updateQueueMessage()

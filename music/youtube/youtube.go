@@ -74,18 +74,21 @@ func (y *Youtube) GetGuildID() string {
 }
 
 func (y *Youtube) GetURL() string {
-	if MatchURL(y.URL) {
-		getUrlArgs := append(youtubeFindUrlArgs, y.URL)
-		err, stdout, stderr := system.ShellOut(strings.Join(getUrlArgs, " "))
-		if err != nil {
-			fmt.Println("Error getting url from youtube: ", err)
-			fmt.Println(stderr)
-			return ""
-		}
-
-		y.VideoURL = y.URL
-		y.URL = strings.TrimSpace(stdout)
+	// check if the URL is still a youtube video or is already a "--get-url"
+	if !MatchBaseURL(y.URL) {
+		return y.URL
 	}
+
+	getUrlArgs := append(youtubeFindUrlArgs, y.URL)
+	err, stdout, stderr := system.ShellOut(strings.Join(getUrlArgs, " "))
+	if err != nil {
+		fmt.Println("Error getting url from youtube: ", err)
+		fmt.Println(stderr)
+		return ""
+	}
+
+	y.VideoURL = y.URL
+	y.URL = strings.TrimSpace(stdout)
 
 	return y.URL
 }
@@ -129,5 +132,5 @@ var youtubePlaylistArgs = []string{
 	"--flat-playlist",
 	"--dump-single-json",
 	"-x",
-	"--playlist-end 20",
+	"--playlist-end 100",
 }

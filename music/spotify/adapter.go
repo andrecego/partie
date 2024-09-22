@@ -8,6 +8,7 @@ import (
 	"golang.org/x/net/html"
 )
 
+// TODO: Implement via Spotify API
 func URLToText(url string) string {
 	response, err := requests.Get(url)
 	if err != nil {

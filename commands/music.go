@@ -186,7 +186,7 @@ func addToQueue(_ *discordgo.Session, query string, addedBy youtube.AddedBy) err
 func addMusicFromFinder(finder interfaces.Finder, addedBy youtube.AddedBy) error {
 	jsonInfo, err := finder.Download()
 	if err != nil {
-		return fmt.Errorf("Error downloading video: %s", err)
+		return err
 	}
 
 	var youtubeResult youtube.YoutubeResult
