@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"partie-bot/bot"
 	"partie-bot/config"
 
@@ -20,6 +21,17 @@ func main() {
 	// rollbar.WrapAndWait(bot.Start)
 	// defer rollbar.Close()
 	bot.Start()
+
+	http.HandleFunc("/healthcheck", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
+
+	go func() {
+		if err := http.ListenAndServe(":8000", nil); err != nil {
+			fmt.Println("Failed to start server:", err)
+		}
+	}()
 
 	<-make(chan struct{})
 	return
