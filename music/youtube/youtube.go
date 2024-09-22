@@ -115,6 +115,7 @@ func (y *Youtube) GetVideoURL() string {
 
 var youtubeDefaultArgs = []string{
 	"/usr/local/bin/yt-dlp",
+	"--username oauth2 --password ''",
 	"--no-playlist",
 	"--dump-single-json",
 	"-x",
@@ -122,6 +123,7 @@ var youtubeDefaultArgs = []string{
 
 var youtubeFindUrlArgs = []string{
 	"/usr/local/bin/yt-dlp",
+	"--username oauth2 --password ''",
 	"--no-playlist",
 	"-x",
 	"--get-url",
@@ -129,6 +131,7 @@ var youtubeFindUrlArgs = []string{
 
 var youtubePlaylistArgs = []string{
 	"/usr/local/bin/yt-dlp",
+	"--username oauth2 --password ''",
 	"--flat-playlist",
 	"--dump-single-json",
 	"-x",
