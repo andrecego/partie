@@ -1,4 +1,4 @@
-FROM golang:1.16
+FROM golang:1.23.1
 
 RUN apt-get update -qq && apt-get install -y \
   build-essential \
@@ -14,10 +14,9 @@ RUN chmod a+rx /usr/local/bin/yt-dlp
 
 RUN mkdir /server
 WORKDIR /server
+
 COPY go.mod .
 COPY go.sum .
 RUN go mod download
 
 COPY . .
-
-CMD ["go", "run", "main.go"]
