@@ -1,13 +1,65 @@
 package music
 
 import (
+	"context"
 	"fmt"
 	"io"
+	"partie-bot/cache"
 	"time"
 
 	"github.com/andrecego/dca"
 	"github.com/bwmarrin/discordgo"
+	"github.com/go-redis/redis/v8"
 )
+
+const (
+	disconnectAfterDuration = 3 * time.Minute
+)
+
+func keepAliveCacheKey(guildID string) string {
+	return "guilds:" + guildID + ":keep_alive"
+}
+
+func setKeepAliveCache(guildID string, expires time.Duration) error {
+	key := keepAliveCacheKey(guildID)
+	err := cache.New().Client.Set(context.TODO(), key, true, expires).Err()
+	if err != nil {
+		fmt.Println("Error setting disconnect cache:", err)
+	}
+
+	return err
+}
+
+func Disconnect(session *discordgo.Session, guildID string) {
+	if currentDJ == nil || currentDJ.Discord.VoiceConnection == nil {
+		return
+	}
+
+	err := currentDJ.Discord.VoiceConnection.Disconnect()
+	if err != nil {
+		fmt.Println("Error disconnecting:", err)
+	}
+
+	Cleanup(session, guildID)
+}
+
+func disconnectAfter(session *discordgo.Session, guildID string, duration time.Duration) {
+	err := setKeepAliveCache(guildID, duration)
+	if err != nil {
+		fmt.Println("Error setting keep alive cache:", err)
+		return
+	}
+
+	time.AfterFunc(duration+2*time.Second, func() {
+		key := keepAliveCacheKey(guildID)
+		_, err := cache.New().Client.Get(context.TODO(), key).Result()
+		if err == redis.Nil {
+			Disconnect(session, guildID)
+		} else if err != nil {
+			fmt.Println("Error getting keep alive cache:", err)
+		}
+	})
+}
 
 func Stream(session *discordgo.Session) error {
 	if currentDJ.CurrentSong != nil {
@@ -31,6 +83,10 @@ func Stream(session *discordgo.Session) error {
 			return fmt.Errorf("Error connecting to voice channel: %s", err)
 		}
 	}
+
+	disconnectAfterSongDuration := currentSong.GetDuration() + disconnectAfterDuration
+	fmt.Printf("Setting keep alive cache for %.0f seconds\n", disconnectAfterSongDuration.Seconds())
+	go disconnectAfter(session, currentDJ.Discord.VoiceConnection.GuildID, disconnectAfterSongDuration)
 
 	// If there are more songs in the queue, start downloading the next song
 	if len(currentDJ.Queue) > 0 {
