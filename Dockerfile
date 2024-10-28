@@ -1,5 +1,7 @@
 FROM golang:1.23.1
 
+ARG YT_DLP_SECRET
+
 RUN apt-get update -qq && apt-get install -y \
   build-essential \
   ca-certificates \
@@ -24,5 +26,7 @@ COPY go.sum .
 RUN go mod download
 
 COPY . .
+
+RUN echo $YT_DLP_SECRET > /server/yt-dlp/youtube-oauth2/token_data.json
 
 CMD ["air", "-c", ".air.toml"]

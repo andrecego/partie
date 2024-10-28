@@ -5,3 +5,4 @@ config.json
 .todo
 yt-dlp-example.json
 .vscode/
+yt-dlp/youtube-oauth2/token_data.json
